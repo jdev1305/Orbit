@@ -1,3 +1,4 @@
+/* No remote font imports. Use optional locally bundled font files or system fallbacks. */
 .orbit{display:grid;grid-template-columns:280px minmax(0,1fr)300px;width:100vw;height:100vh;background:#080d19;color:#e2e8f0;font-family:Inter,system-ui,sans-serif}
 .sidebar,.details{padding:20px;background:#101827;overflow-y:auto;min-height:0}.sidebar{border-right:1px solid #243044}.details{border-left:1px solid #243044}.brand h2{margin:0 0 6px;color:#a78bfa;letter-spacing:4px;font-size:23px}.brand p,.muted{color:#94a3b8;font-size:12px}.details h3{font-size:16px;margin:6px 0 26px}.details p{font-size:13px;line-height:1.6;overflow-wrap:anywhere}.section-title{margin-top:23px;margin-bottom:8px;color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px}
 button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #a78bfa;outline-offset:2px}.search-box{display:flex;align-items:center;gap:7px;margin:22px 0 12px;padding:9px;border:1px solid #334155;border-radius:8px;background:#172235;color:#94a3b8}.search-box input{width:100%;min-width:0;border:0;outline:none;background:transparent;color:#e2e8f0;font-size:12px}.search-box button{display:flex;border:0;background:none;color:#94a3b8;padding:0}.explorer-actions{display:flex;gap:8px;margin-bottom:19px}.explorer-actions button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1;padding:8px 6px;border:1px solid #334155;border-radius:7px;background:transparent;color:#94a3b8;font-size:11px}.explorer-actions button:hover{border-color:#a78bfa;color:#fff}
@@ -107,3 +108,543 @@ button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,inpu
 .inspector-expand{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;border:0;border-top:1px solid #334155;background:#142137;color:#a5b4fc;padding:8px;font-size:11px;cursor:pointer}
 .inspector-expand:hover{background:#223451}
 @media(max-width:900px){.orbit-center-name{display:none}.orbit-graph-actions button{padding:6px}}
+
+
+/* Orbit v2.3 — Stellar Grid: keep the explorer and inspector deliberately quiet.
+   The Three.js scene carries the grid, stars and orbital rings. */
+.orbit {
+  background: #050d19;
+  color: #e1eaf4;
+}
+.sidebar,
+.details {
+  background: #0e1726;
+  border-color: #233246;
+}
+.brand h2 {
+  color: #b5a3e8;
+  text-shadow: none;
+}
+.search-box,
+.section-header,
+.object-item,
+.icon-button,
+.inspector-reference,
+.inspector-id-row button,
+.inspector-type {
+  background: #142033;
+  border-color: #2a3a50;
+}
+.object-item.selected {
+  background: #24213b;
+  border-color: #8372bd;
+}
+.object-item:hover,
+.section-expand:hover,
+.section-visibility:hover,
+.icon-button:hover {
+  background: #1c2b40;
+}
+.inspector-reference:hover {
+  background: #1d2b40;
+  border-color: #6e7fa2;
+}
+.sidebar,
+.details {
+  scrollbar-color: #2c4059 transparent;
+}
+.sidebar::-webkit-scrollbar-thumb,
+.details::-webkit-scrollbar-thumb {
+  background: #2c4059;
+  border-color: #0e1726;
+}
+.graph {
+  background: #050d19;
+}
+.toolbar {
+  background: rgba(12, 23, 38, .94);
+  border-bottom-color: #23344b;
+  backdrop-filter: blur(12px);
+}
+.toolbar-heading strong {
+  color: #e5edf7;
+  letter-spacing: .015em;
+}
+.orbit-center-name {
+  color: #778da7;
+}
+.orbit-center-name:last-child {
+  color: #5f90ac;
+  font-size: 9px;
+  letter-spacing: .12em;
+}
+.graph-controls {
+  background: rgba(13, 25, 42, .94);
+  border-color: #2c4159;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .35);
+}
+.graph-controls button {
+  background: #17273b;
+  border-color: #34485f;
+}
+.graph-controls button:hover {
+  background: #233950;
+  border-color: #65a8c7;
+}
+.vertical-control-label input,
+.vertical-size-slider {
+  accent-color: #8d9ff2;
+}
+.inspector-header,
+.inspector-group {
+  border-color: #26374a;
+}
+.inspector-reference-wrap {
+  border-color: #2a3a50;
+}
+@media (prefers-reduced-motion: reduce) {
+  .graph-controls,
+  .toolbar {
+    backdrop-filter: none;
+  }
+}
+
+/* v2.3.1 — Fixed stellar backdrop. It is a screen-space overlay, not a 3D object. */
+.graph .stellar-static-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(149, 197, 230, .5) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 72% 31%, rgba(149, 197, 230, .35) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 43% 77%, rgba(149, 197, 230, .4) 0 1px, transparent 1.6px),
+    linear-gradient(rgba(52, 111, 155, .085) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 111, 155, .085) 1px, transparent 1px);
+  background-size: 317px 281px, 419px 367px, 373px 331px, 56px 56px, 56px 56px;
+  background-position: 0 0, 43px 70px, 103px 21px, center center, center center;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,.65) 70%, transparent 110%);
+  mask-image: radial-gradient(ellipse at center, black 20%, rgba(0,0,0,.65) 70%, transparent 110%);
+}
+
+/* v2.3.7 — theme selector: surface palettes only, STEP type colors are unchanged. */
+.theme-picker {
+  display:flex;flex-direction:column;gap:8px;
+  margin-top:20px;padding:13px 11px;
+  border:1px solid var(--theme-border,#2a3a50);
+  border-radius:9px;background:var(--theme-panel,#142033);
+}
+.theme-picker label {font-size:11px;font-weight:700;color:var(--theme-text,#dce6f3)}
+.theme-picker select {
+  width:100%;padding:9px 10px;border:1px solid var(--theme-border,#34445e);
+  border-radius:7px;background:var(--theme-surface,#0e1726);
+  color:var(--theme-text,#dce6f3);font-size:12px;
+}
+.theme-picker small {color:var(--theme-muted,#91a3b9);font-size:10px}
+.orbit.theme-stellar {
+  --theme-base:#050d19;--theme-surface:#0e1726;--theme-panel:#142033;
+  --theme-border:#2a3a50;--theme-text:#e1eaf4;--theme-muted:#91a3b9;
+  --theme-grid:rgba(52,111,155,.085);--theme-star:rgba(149,197,230,.45);
+}
+.orbit.theme-graphite {
+  --theme-base:#111318;--theme-surface:#1b1e24;--theme-panel:#252a32;
+  --theme-border:#3b424e;--theme-text:#f0f1f4;--theme-muted:#a7acb7;
+  --theme-grid:rgba(160,165,178,.055);--theme-star:rgba(170,175,190,.22);
+}
+.orbit.theme-deep-space {
+  --theme-base:#070517;--theme-surface:#141126;--theme-panel:#211a38;
+  --theme-border:#3a3054;--theme-text:#f1eaff;--theme-muted:#afa1ca;
+  --theme-grid:rgba(112,80,175,.09);--theme-star:rgba(190,150,245,.48);
+}
+.orbit.theme-graphite,.orbit.theme-deep-space {background:var(--theme-base);color:var(--theme-text)}
+.orbit.theme-graphite .sidebar,.orbit.theme-graphite .details,
+.orbit.theme-deep-space .sidebar,.orbit.theme-deep-space .details {
+  background:var(--theme-surface);border-color:var(--theme-border)
+}
+.orbit.theme-graphite .graph,.orbit.theme-deep-space .graph {background:var(--theme-base)}
+.orbit.theme-graphite .toolbar,.orbit.theme-deep-space .toolbar {
+  background:var(--theme-surface);border-color:var(--theme-border)
+}
+.orbit.theme-graphite .section-header,.orbit.theme-graphite .object-item,
+.orbit.theme-graphite .icon-button,.orbit.theme-graphite .search-box,
+.orbit.theme-graphite .inspector-reference,.orbit.theme-graphite .inspector-type,
+.orbit.theme-graphite .inspector-id-row button,
+.orbit.theme-deep-space .section-header,.orbit.theme-deep-space .object-item,
+.orbit.theme-deep-space .icon-button,.orbit.theme-deep-space .search-box,
+.orbit.theme-deep-space .inspector-reference,.orbit.theme-deep-space .inspector-type,
+.orbit.theme-deep-space .inspector-id-row button {
+  background:var(--theme-panel);border-color:var(--theme-border);color:var(--theme-text)
+}
+.orbit.theme-graphite .graph-controls,.orbit.theme-deep-space .graph-controls {
+  background:var(--theme-surface);border-color:var(--theme-border)
+}
+.orbit.theme-graphite .graph-controls button,.orbit.theme-deep-space .graph-controls button {
+  background:var(--theme-panel);border-color:var(--theme-border)
+}
+.orbit.theme-graphite .object-item.selected,.orbit.theme-deep-space .object-item.selected {
+  background:var(--theme-panel);border-color:#a78bfa
+}
+.orbit.theme-graphite .inspector-group,.orbit.theme-graphite .inspector-header,
+.orbit.theme-deep-space .inspector-group,.orbit.theme-deep-space .inspector-header {
+  border-color:var(--theme-border)
+}
+.orbit.theme-deep-space .stellar-static-grid {
+  background-image:
+    radial-gradient(circle at 12% 18%,var(--theme-star) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 72% 31%,var(--theme-star) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 43% 77%,var(--theme-star) 0 1px,transparent 1.6px),
+    linear-gradient(var(--theme-grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--theme-grid) 1px,transparent 1px);
+}
+
+
+/* v2.4: Two explorers, one shared interaction model and visual language. */
+.orbit-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:18px 0 7px;padding:4px;background:rgba(4,10,20,.45);border:1px solid var(--theme-border,#2a3a50);border-radius:9px}
+.orbit-mode-switch button{min-width:0;padding:9px 5px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--theme-muted,#91a3b9);font-size:11px;font-weight:600;line-height:1.3}
+.orbit-mode-switch button:hover{color:var(--theme-text,#e1eaf4);background:rgba(148,163,184,.08)}
+.orbit-mode-switch button.active{background:var(--theme-panel,#142033);border-color:#697ea1;color:var(--theme-text,#e1eaf4);box-shadow:0 1px 5px #0003}
+.orbit-mode-description{margin:0 0 4px;color:var(--theme-muted,#91a3b9);font-size:10px;line-height:1.45}
+
+/* Shared STEPXML source: both explorer modes use the same parsed export. */
+.stepxml-source { margin: 10px 12px 14px; padding: 12px; border: 1px solid var(--border, #27374d); border-radius: 9px; display: flex; flex-direction: column; gap: 7px; }
+.stepxml-source label { font-size: 10px; font-weight: 700; letter-spacing: .09em; color: #9fb0c5; }
+.stepxml-file-row { display: flex; gap: 6px; min-width: 0; }
+.stepxml-file-row input { flex: 1; min-width: 0; padding: 8px; border: 1px solid #36465a; border-radius: 5px; background: #0e1b2b; color: #e2e8f0; font-size: 12px; }
+.stepxml-file-row button { border: 1px solid #3c607a; border-radius: 5px; background: #16364a; color: #e2e8f0; padding: 0 10px; cursor: pointer; }
+.stepxml-file-row button:disabled { opacity: .5; cursor: default; }
+.stepxml-source small { color: #9fb0c5; overflow-wrap: anywhere; font-size: 11px; }
+.stepxml-error { color: #fda4af; font-size: 11px; overflow-wrap: anywhere; margin: 0; }
+
+/* STEPXML folder explorer */
+.stepxml-source-heading { display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 700; letter-spacing: .09em; color: #9fb0c5; }
+.stepxml-source-heading button { display: inline-flex; border: 0; background: transparent; color: #9fb0c5; padding: 3px; cursor: pointer; }
+.stepxml-source-heading button:hover { color: #e2e8f0; }
+.stepxml-tree { max-height: 240px; overflow: auto; padding: 4px 0; border: 1px solid #26374e; border-radius: 6px; background: #0a1728; }
+.stepxml-tree-folder, .stepxml-tree-file { width: 100%; display: flex; align-items: center; gap: 6px; min-height: 29px; border: 0; background: transparent; color: #b7c7d9; font-size: 11px; text-align: left; cursor: pointer; padding-right: 7px; }
+.stepxml-tree-folder:hover, .stepxml-tree-file:hover { background: #182b43; }
+.stepxml-tree-folder > span:nth-last-child(2), .stepxml-tree-file > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stepxml-tree-folder svg { flex-shrink: 0; }
+.stepxml-tree-file svg { flex-shrink: 0; color: #78bce4; }
+.stepxml-tree-file.active { background: #173650; color: #e8f7ff; font-weight: 650; }
+.stepxml-tree-file:disabled { opacity: .55; cursor: wait; }
+.stepxml-tree-count { color: #93a6bb; font-size: 10px; }
+.stepxml-tree-empty { margin: 6px 10px; color: #91a3b8; font-size: 11px; }
+
+/* v2.7 — Seven coordinated palettes; preserve STEP object-type colors. */
+.orbit.theme-arctic {--theme-base:#2e3440;--theme-surface:#343c49;--theme-panel:#3b4554;--theme-border:#596579;--theme-text:#eceff4;--theme-muted:#b5c2d1;--theme-grid:rgba(136,192,208,.055);--theme-star:rgba(136,192,208,.22);--theme-accent:#88c0d0}
+.orbit.theme-porcelain {--theme-base:#f8fafc;--theme-surface:#fff;--theme-panel:#f1f5f9;--theme-border:#cbd5e1;--theme-text:#1e293b;--theme-muted:#52647b;--theme-grid:rgba(100,116,139,.06);--theme-star:transparent;--theme-accent:#2563eb}
+.orbit.theme-ember {--theme-base:#101010;--theme-surface:#1c1b19;--theme-panel:#29241e;--theme-border:#534333;--theme-text:#f7eee0;--theme-muted:#b7a89a;--theme-grid:rgba(245,158,11,.05);--theme-star:rgba(245,158,11,.23);--theme-accent:#f59e0b}
+.orbit.theme-evergreen {--theme-base:#0b1512;--theme-surface:#14221c;--theme-panel:#1b3026;--theme-border:#315445;--theme-text:#e1f5e9;--theme-muted:#9ab9aa;--theme-grid:rgba(52,211,153,.05);--theme-star:rgba(52,211,153,.2);--theme-accent:#34d399}
+.orbit.theme-stellar {--theme-accent:#38bdf8}
+.orbit.theme-graphite {--theme-accent:#93c5fd}
+.orbit.theme-deep-space {--theme-accent:#a78bfa}
+.orbit {grid-template-columns:280px minmax(0,1fr)225px}
+@media(max-width:1350px){.orbit{grid-template-columns:250px minmax(0,1fr)195px}}
+@media(max-width:850px){.orbit{grid-template-columns:220px minmax(0,1fr)}}
+.orbit .sidebar,.orbit .details {background:var(--theme-surface);border-color:var(--theme-border);color:var(--theme-text)}
+.orbit .graph {background:var(--theme-base)}
+.orbit .toolbar {background:var(--theme-surface);border-color:var(--theme-border)}
+.orbit .toolbar-heading strong,.orbit .inspector-header h3,.orbit .inspector-group-heading h4,.orbit .inspector-property p,.orbit .inspector-id-row {color:var(--theme-text)}
+.orbit .toolbar-heading>span,.orbit .inspector-subheading,.orbit .inspector-group-caption,.orbit .inspector-property .section-title,.orbit .inspector-reference-type,.orbit .inspector-reference-id {color:var(--theme-muted)}
+.orbit .section-header,.orbit .object-item,.orbit .icon-button,.orbit .search-box,.orbit .inspector-reference,.orbit .inspector-type,.orbit .inspector-id-row button,.orbit .inspector-expand,.orbit .stepxml-source,.orbit .stepxml-tree,.orbit .graph-controls,.orbit .graph-controls button,.orbit .focus-status {background:var(--theme-panel);border-color:var(--theme-border);color:var(--theme-text)}
+.orbit .section-expand,.orbit .section-visibility,.orbit .inspector-reference-top,.orbit .inspector-reference-name,.orbit .inspector-type,.orbit .stepxml-tree-file,.orbit .stepxml-tree-folder {color:var(--theme-text)}
+.orbit .object-info small,.orbit .stepxml-source-heading,.orbit .stepxml-source small,.orbit .stepxml-tree-count,.orbit .theme-picker small,.orbit .vertical-control-label,.orbit .vertical-size-value,.orbit .inspector-empty {color:var(--theme-muted)}
+.orbit .inspector-group,.orbit .inspector-header,.orbit .inspector-reference-wrap,.orbit .vertical-control-divider {border-color:var(--theme-border)}
+.orbit .stepxml-tree {background:var(--theme-surface)}
+.orbit .stepxml-tree-file.active,.orbit .object-item.selected {background:var(--theme-panel);outline:1px solid var(--theme-accent);border-color:var(--theme-accent)}
+.orbit .object-item:hover,.orbit .inspector-reference:hover,.orbit .stepxml-tree-file:hover,.orbit .stepxml-tree-folder:hover,.orbit .icon-button:hover,.orbit .graph-controls button:hover {filter:brightness(1.12);border-color:var(--theme-accent)}
+.orbit .theme-picker,.orbit .orbit-mode-switch {background:var(--theme-surface);border-color:var(--theme-border)}
+.orbit .theme-picker label,.orbit .orbit-mode-switch button.active {color:var(--theme-text)}
+.orbit .theme-picker select,.orbit .orbit-mode-switch button.active {background:var(--theme-panel);border-color:var(--theme-border);color:var(--theme-text)}
+.orbit .orbit-mode-switch button {color:var(--theme-muted)}
+.orbit .graph-controls {box-shadow:0 10px 32px #0004}
+.orbit .stellar-static-grid {background-image:radial-gradient(circle at 12% 18%,var(--theme-star) 0 1px,transparent 1.6px),radial-gradient(circle at 72% 31%,var(--theme-star) 0 1px,transparent 1.6px),linear-gradient(var(--theme-grid) 1px,transparent 1px),linear-gradient(90deg,var(--theme-grid) 1px,transparent 1px)}
+.orbit.theme-porcelain .brand h2 {color:#2563eb}
+.orbit.theme-porcelain .focus-heading,.orbit.theme-porcelain .focused-text {color:#1d4ed8}
+.orbit.theme-porcelain .inspector-reference-top svg {color:#2563eb}
+.orbit.theme-porcelain .graph-controls button,.orbit.theme-porcelain .inspector-id-row button {color:#1e293b}
+.orbit.theme-porcelain .stepxml-tree-file.active {background:#dbeafe}
+.orbit.theme-porcelain .object-item.selected {background:#dbeafe}
+.orbit.theme-porcelain .inspector-empty {border-color:#cbd5e1}
+.orbit .inspector-reference-id,.orbit .inspector-reference-name,.orbit .inspector-reference-top strong {overflow-wrap:anywhere}
+.orbit .inspector-reference {padding:9px 8px}
+.orbit .inspector {padding-left:12px;padding-right:12px}
+
+
+/* v2.8: consistent typography across every Orbit palette. */
+.orbit {font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:450;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.orbit button,.orbit input,.orbit select {font-family:inherit}
+.orbit .brand h2 {font-weight:800;letter-spacing:.18em}
+.orbit .section-expand,.orbit .inspector-group-heading h4,.orbit .toolbar-heading strong {font-weight:650}
+.orbit .object-info strong,.orbit .inspector-reference-name,.orbit .inspector-name {font-weight:600}
+.orbit .object-info small,.orbit .inspector-reference-id,.orbit .inspector-id-row>span,.orbit .stepxml-tree-file {font-size:10px}
+.orbit .object-info small,.orbit .inspector-reference-id,.orbit .inspector-id-row>span {font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:-.025em}
+.orbit .section-title,.orbit .stepxml-source-heading {font-weight:700;letter-spacing:.075em}
+.orbit .inspector-reference,.orbit .object-item {line-height:1.45}
+
+/* v2.9 — Graphite Space: material depth with a restrained purple identity. */
+.orbit.theme-graphite {
+  --theme-base:#0c1017;--theme-surface:#141920;--theme-panel:#202732;
+  --theme-border:#35404e;--theme-text:#f1f3f7;--theme-muted:#a6b2c1;
+  --theme-grid:rgba(139,158,187,.045);--theme-star:rgba(163,187,216,.3);
+  --theme-accent:#9146ff;
+  background:#0c1017;color:var(--theme-text);
+}
+.orbit.theme-graphite .sidebar,.orbit.theme-graphite .details {
+  background-color:#151a22;
+  background-image:linear-gradient(155deg,rgba(135,154,184,.07),transparent 35%,rgba(0,0,0,.13) 85%),
+    repeating-linear-gradient(115deg,rgba(255,255,255,.008) 0px,rgba(255,255,255,.008) 1px,transparent 1px,transparent 5px);
+  border-color:#303a48;
+}
+.orbit.theme-graphite .graph {
+  background:radial-gradient(ellipse at 53% 42%,#192435 0%,#0c1017 70%,#090c12 100%);
+}
+.orbit.theme-graphite .stellar-static-grid {
+  pointer-events:none;position:absolute;inset:0;z-index:1;
+  background-image:
+    radial-gradient(circle at 67.8% 10.8%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 61.5% 82.8%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 82.8% 51.4%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 62.8% 37.4%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 52.7% 12.4%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 67.9% 59.7%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 28.6% 38.3%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 73.1% 44.6%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 95.0% 95.2%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 83.2% 10.7%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 8.4% 29.7%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 36.4% 69.7%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 82.0% 56.0%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 63.6% 57.0%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 4.3% 52.6%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 21.9% 42.0%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 1.9% 65.0%,rgba(210,222,246,0.6) 0 1.1px,transparent 1.9000000000000001px),
+    radial-gradient(circle at 90.2% 8.6%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 57.8% 4.3%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 35.5% 17.3%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 85.3% 71.9%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 88.9% 22.9%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 71.5% 69.2%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 51.0% 90.0%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 62.2% 29.1%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 71.3% 48.2%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 21.9% 61.3%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 5.7% 45.1%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 55.6% 2.2%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 64.6% 10.5%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 64.7% 34.7%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 3.9% 97.9%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 7.3% 17.0%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 50.6% 25.5%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 53.0% 47.5%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 57.5% 54.2%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 29.8% 22.3%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 69.1% 43.2%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 52.0% 89.9%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 1.8% 28.6%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 56.2% 7.2%,rgba(210,222,246,0.38) 0 0.8px,transparent 1.6px),
+    radial-gradient(circle at 74.9% 40.5%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 32.0% 20.7%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 95.7% 6.5%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 81.5% 69.6%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 89.0% 69.3%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 35.0% 54.8%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 91.3% 5.9%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 84.3% 66.6%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 20.3% 94.8%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 30.4% 2.4%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 27.2% 51.5%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 3.7% 58.8%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 44.6% 33.9%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 75.1% 61.4%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 95.6% 85.5%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 85.3% 91.6%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 84.3% 48.7%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 7.7% 44.9%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 61.7% 95.1%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 65.1% 57.1%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 9.5% 64.4%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 4.6% 15.8%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 5.2% 72.3%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 93.3% 59.0%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 9.6% 73.0%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 18.1% 70.1%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 67.3% 92.7%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 17.2% 24.4%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 32.3% 9.3%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 93.6% 61.8%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 11.4% 47.9%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 10.7% 94.5%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    radial-gradient(circle at 36.2% 2.2%,rgba(210,222,246,0.22) 0 0.6px,transparent 1.4px),
+    linear-gradient(rgba(138,151,176,.052) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(138,151,176,.052) 1px,transparent 1px);
+  background-size:100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,52px 52px,52px 52px;
+}
+.orbit.theme-graphite .brand {display:flex;align-items:center;gap:10px;margin:0 0 8px;min-height:49px}
+.orbit.theme-graphite .orbit-brand-mark {width:46px;height:40px;flex-shrink:0;overflow:visible;filter:drop-shadow(0 0 5px rgba(145,70,255,.14))}
+.orbit.theme-graphite .orbit-brand-wordmark {font-size:19px;line-height:1;font-weight:750;letter-spacing:.085em;color:#f3f4f8}
+.orbit.theme-graphite .orbit-mode-switch {margin:11px 0 14px;background:#10151d}
+.orbit.theme-graphite .orbit-mode-switch button.active {border-color:#9146ff;box-shadow:inset 0 0 0 1px rgba(145,70,255,.22);background:#252338}
+.orbit.theme-graphite .stepxml-source {margin:0 0 14px;padding:11px;background:linear-gradient(155deg,#232b36,#1a202a);box-shadow:inset 0 1px rgba(255,255,255,.025)}
+.orbit.theme-graphite .stepxml-tree {background:#141a23;border-color:#35404e}
+.orbit.theme-graphite .stepxml-tree-file.active {background:#29243c;border-color:#9146ff;outline:none;color:#f5efff}
+.orbit.theme-graphite .search-box {margin:15px 0 10px}
+.orbit.theme-graphite .explorer-actions {gap:7px;margin-bottom:16px}
+.orbit.theme-graphite .explorer-actions button {flex:0 0 35px;width:35px;height:34px;padding:0;background:#202732;color:#c6d0df}
+.orbit.theme-graphite .explorer-actions button:hover {border-color:#9146ff;color:#fff}
+.orbit.theme-graphite .section-header,.orbit.theme-graphite .object-item,.orbit.theme-graphite .icon-button,.orbit.theme-graphite .inspector-reference,.orbit.theme-graphite .graph-controls,.orbit.theme-graphite .graph-controls button {background-image:linear-gradient(155deg,rgba(255,255,255,.045),transparent 55%,rgba(0,0,0,.07));box-shadow:inset 0 1px rgba(255,255,255,.02)}
+.orbit.theme-graphite .object-item.selected {background:#29243c;border-color:#9146ff;outline:none}
+.orbit.theme-graphite .icon-button.active,.orbit.theme-graphite .focus-status,.orbit.theme-graphite .focus-chip {background:#29243c;border-color:#9146ff;color:#d4baff}
+.orbit.theme-graphite .toolbar {background:linear-gradient(120deg,#1b222d,#151b25);border-color:#35404e}
+.orbit.theme-graphite .graph-controls {background-color:rgba(24,30,40,.96);border-color:#465164;box-shadow:0 14px 36px #0008}
+.orbit.theme-graphite input[type='checkbox'],.orbit.theme-graphite input[type='range'] {accent-color:#9146ff}
+.orbit.theme-graphite button:focus-visible,.orbit.theme-graphite input:focus-visible {outline-color:#b78aff}
+
+/* v3.0 — One coherent violet accent; cool graphite atmosphere. */
+.orbit.theme-graphite {
+  --theme-base:#0a0e16;
+  --theme-surface:#151922;
+  --theme-panel:#20252f;
+  --theme-border:#353a49;
+  --theme-muted:#aeb6c5;
+  --theme-grid:rgba(153,164,192,.052);
+  --theme-star:rgba(201,212,239,.42);
+  --theme-accent:#9146ff;
+}
+.orbit.theme-graphite .sidebar,
+.orbit.theme-graphite .details,
+.orbit.theme-graphite .stepxml-tree,
+.orbit.theme-graphite .stepxml-source {
+  scrollbar-width:thin;
+  scrollbar-color:#65537f #191d26;
+}
+.orbit.theme-graphite .sidebar::-webkit-scrollbar,
+.orbit.theme-graphite .details::-webkit-scrollbar,
+.orbit.theme-graphite .stepxml-tree::-webkit-scrollbar {width:7px;height:7px}
+.orbit.theme-graphite .sidebar::-webkit-scrollbar-thumb,
+.orbit.theme-graphite .details::-webkit-scrollbar-thumb,
+.orbit.theme-graphite .stepxml-tree::-webkit-scrollbar-thumb {
+  background:#65537f;border:1px solid #191d26;border-radius:10px;
+}
+.orbit.theme-graphite .sidebar::-webkit-scrollbar-thumb:hover,
+.orbit.theme-graphite .details::-webkit-scrollbar-thumb:hover,
+.orbit.theme-graphite .stepxml-tree::-webkit-scrollbar-thumb:hover {background:#9146ff}
+.orbit.theme-graphite .stepxml-tree-file svg {color:#b58aff}
+.orbit.theme-graphite .stepxml-tree-file.active {background:#30253e;color:#f5efff;border-color:#9146ff}
+.orbit.theme-graphite .stepxml-tree-file.active svg {color:#c9a7ff}
+.orbit.theme-graphite .section-header {background-color:#222630;border-color:#3b4050}
+.orbit.theme-graphite .section-count {background:#352a49;color:#d1b8f7}
+.orbit.theme-graphite .object-item.selected {background:#30253e;border-color:#9146ff}
+.orbit.theme-graphite .object-row.focused {outline-color:#9146ff}
+.orbit.theme-graphite .icon-button:hover,
+.orbit.theme-graphite .graph-controls button:hover,
+.orbit.theme-graphite .inspector-reference:hover,
+.orbit.theme-graphite .section-visibility:hover {border-color:#9146ff}
+.orbit.theme-graphite .graph {background:#0a0e16}
+.orbit.theme-graphite .stellar-static-grid {
+  background-color:transparent;
+  filter:none;
+}
+.orbit.theme-graphite .orbit-brand-mark {width:38px;height:38px;filter:none}
+.orbit.theme-graphite .orbit-brand-wordmark {font-weight:700;letter-spacing:.055em}
+.orbit.theme-graphite .orbit-mode-switch button.active {background:#30253e;color:#f7f3ff}
+.orbit.theme-graphite .search-box:focus-within {border-color:#9146ff;box-shadow:0 0 0 2px rgba(145,70,255,.13)}
+.orbit.theme-graphite input[type=range],.orbit.theme-graphite input[type=checkbox] {accent-color:#9146ff}
+
+/* Local-only file controls and compact relationship-label toggle */
+.orbit .local-file-input {position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.orbit .local-file-actions {display:flex;align-items:center;gap:5px}
+.orbit .local-file-actions button {display:grid;place-items:center;width:27px;height:27px;border:1px solid #414653;border-radius:6px;background:#202630;color:#cbb2f5;cursor:pointer}
+.orbit .local-file-actions button:hover {border-color:#9146ff;color:#fff}
+.orbit .orbit-label-toggle {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 2px;border:1px solid transparent;border-radius:7px;background:transparent;color:#8d99a9;font-size:10px;cursor:pointer}
+.orbit .orbit-label-toggle.active {color:#cba8ff;background:#30253e;border-color:#66428f}
+.orbit .orbit-label-toggle:hover {color:#fff;border-color:#9146ff}
+
+/* v3.2 — cleaner graph canvas, deliberate inspector hierarchy, ID copy in explorer */
+.orbit.theme-graphite .graph{background:#0a0e16}
+.orbit .object-row{gap:3px}
+.orbit .object-row .copy-object-button{color:#b7a5d7}
+.orbit .object-row .copy-object-button:hover{color:#d5b8ff;border-color:#9146ff}
+.orbit .object-row .icon-button{width:26px;min-width:26px}
+.orbit .object-item{padding-left:7px;padding-right:5px}
+.orbit .inspector-properties{display:flex;flex-direction:column;gap:11px;margin:10px 0 20px}
+.orbit .inspector-property{margin:0;padding:10px 11px 12px;border:1px solid #343e4d;border-radius:9px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(13,17,25,.22));min-width:0}
+.orbit .inspector-property .section-title{margin:0 0 8px;color:#aeb7c7;font-size:10px;font-weight:700;letter-spacing:.075em;text-transform:uppercase}
+.orbit .inspector-value{font-size:12px;line-height:1.55;color:#f0f2f7;font-weight:550;overflow-wrap:anywhere}
+.orbit .inspector-value-name{font-size:14px;font-weight:700;line-height:1.45}
+.orbit .inspector-value-id{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:11px;color:#d9c8f7;font-weight:500}
+.orbit .inspector-attribute{display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid #343e4d}
+.orbit .inspector-attribute:first-of-type{border-top:0}
+.orbit .inspector-attribute-key{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:10px;color:#aeb7c7;overflow-wrap:anywhere}
+.orbit .inspector-attribute-value{font-size:12px;font-weight:550;color:#f0f2f7;overflow-wrap:anywhere}
+.orbit .inspector-type{display:inline-flex;max-width:100%;overflow-wrap:anywhere}
+
+.layout-switch { position:absolute; z-index:12; right:14px; top:16px; display:flex; gap:3px; padding:4px; border:1px solid #3a4251; border-radius:10px; background:linear-gradient(145deg,#252b35,#171b23); box-shadow:0 8px 25px #0005; }
+.layout-switch button { border:1px solid transparent; border-radius:7px; padding:8px 11px; color:#c0c8d5; background:transparent; font:600 11px Inter,system-ui,sans-serif; cursor:pointer; }
+.layout-switch button:hover { color:#fff; background:#303541; }
+.layout-switch button.active { color:#fff; border-color:#9146ff; background:#352349; }
+
+/* v3.6: unified viewer and layout selector in the left sidebar. */
+.orbit.theme-graphite .orbit-view-selector {
+  margin: 11px 0 14px;
+  padding: 4px;
+  border: 1px solid #394354;
+  border-radius: 10px;
+  background: linear-gradient(155deg, #202632, #111720);
+  box-shadow: inset 0 1px rgba(255,255,255,.035);
+}
+.orbit.theme-graphite .orbit-view-selector .orbit-mode-switch {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+.orbit.theme-graphite .orbit-layout-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #343d4b;
+}
+.orbit.theme-graphite .orbit-layout-switch button {
+  min-width: 0;
+  padding: 9px 5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #aab4c5;
+  font: 600 11px Inter, system-ui, sans-serif;
+  cursor: pointer;
+}
+.orbit.theme-graphite .orbit-layout-switch button:hover { background: #303541; color: #fff; }
+.orbit.theme-graphite .orbit-layout-switch button.active {
+  color: #f7f3ff;
+  border-color: #9146ff;
+  background: #30253e;
+  box-shadow: inset 0 0 0 1px rgba(145,70,255,.22);
+}
+
+/* Dockable graph toolbar: the grip is the only draggable area, leaving graph
+   interactions and all existing toolbar buttons intact. */
+.orbit .graph-controls { transition: left .18s ease, right .18s ease, top .18s ease, bottom .18s ease; }
+.orbit .graph-controls.dock-top-left { left:18px; right:auto; top:18px; bottom:auto; }
+.orbit .graph-controls.dock-top-right { right:18px; left:auto; top:18px; bottom:auto; }
+.orbit .graph-controls.dock-bottom-left { left:18px; right:auto; bottom:18px; top:auto; }
+.orbit .graph-controls.dock-bottom-right { right:18px; left:auto; bottom:18px; top:auto; }
+.orbit .graph-controls.is-dragging { transition:none; }
+.orbit .graph-controls .toolbar-drag-handle {
+  display:flex; align-items:center; justify-content:center; min-height:25px;
+  width:100%; padding:3px; border:0; border-radius:6px;
+  color:#aeb7c6; background:transparent; cursor:grab; touch-action:none;
+}
+.orbit .graph-controls .toolbar-drag-handle:active { cursor:grabbing; color:#cba8ff; }
+.orbit .graph-controls .orbit-label-toggle { min-height:37px; padding:7px; }
+.orbit .graph-controls .orbit-label-toggle.active { color:#cba8ff; background:#30253e; border-color:#66428f; }
+@media (max-width:1000px) {
+  .orbit .graph-controls.dock-top-left { left:10px; top:10px; }
+  .orbit .graph-controls.dock-top-right { right:10px; top:10px; }
+  .orbit .graph-controls.dock-bottom-left { left:10px; bottom:10px; }
+  .orbit .graph-controls.dock-bottom-right { right:10px; bottom:10px; }
+}
