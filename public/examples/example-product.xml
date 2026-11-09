@@ -9,16 +9,10 @@
       </Values>
       <References>
         <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
-        <ProductCrossReference Type="rpe_GoldenSupplierItem" ProductID="prd_GSI-EXAMPLE-001" />
+
       </References>
       <DataContainer ID="dct_EXAMPLE-001" UserTypeID="dct_PackagingInformation">
         <Name>dct_PackagingInformation</Name>
-        <Values>
-          <Value AttributeID="att_ExampleField">Demo value</Value>
-        </Values>
-      </DataContainer>
-      <DataContainer ID="dct_EXAMPLE-002" UserTypeID="dct_MarketingInformation">
-        <Name>dct_MarketingInformation</Name>
         <Values>
           <Value AttributeID="att_ExampleField">Demo value</Value>
         </Values>
@@ -51,7 +45,6 @@
         <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
       </Values>
       <References>
-        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
       </References>
     </Product>
     <Product ID="prd_GSI-EXAMPLE-001" UserTypeID="prd_GoldenSupplierItem">
@@ -60,7 +53,6 @@
         <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
       </Values>
       <References>
-        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
         <ProductCrossReference Type="rpe_SupplierItem" ProductID="prd_SI-EXAMPLE-001" />
       </References>
     </Product>
@@ -70,7 +62,6 @@
         <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
       </Values>
       <References>
-        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
         <ProductCrossReference Type="rpe_DataPoolItem" ProductID="prd_DPI-EXAMPLE-001" />
       </References>
     </Product>

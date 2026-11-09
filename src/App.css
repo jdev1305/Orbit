@@ -810,3 +810,49 @@ button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,inpu
   border-color: var(--side-border);
   border-radius: var(--side-radius);
 }
+
+
+/* Alternate representations live inside the central graph workspace. */
+.graph-view-tabs { position:absolute; top:18px; right:20px; z-index:20; display:flex; align-items:center; gap:3px; padding:4px; border:1px solid #343d4b; border-radius:10px; background:rgba(22,28,38,.96); box-shadow:0 8px 24px #0005; }
+.graph-view-tabs button { border:0; background:transparent; color:#aab6c8; padding:9px 13px; border-radius:7px; font:600 12px Inter,system-ui,sans-serif; cursor:pointer; white-space:nowrap; }
+.graph-view-tabs button:hover { color:#fff; background:#303747; }
+.graph-view-tabs button.active { color:#fff; background:#6633ba; }
+.graph-3d-visible { position:absolute; inset:0; }
+.graph-3d-hidden { position:absolute; inset:0; visibility:hidden; pointer-events:none; }
+.graph-export-panel { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; padding:78px 28px 22px; gap:14px; background:#0c1017; min-width:0; min-height:0; }
+.graph-export-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.graph-export-heading strong { color:#f1f3f7; font-size:16px; }
+.graph-export-heading p { color:#aab5c5; font-size:12px; line-height:1.6; margin:5px 0 0; }
+.graph-export-heading button { display:flex; align-items:center; gap:7px; flex-shrink:0; border:1px solid #505c70; border-radius:8px; padding:9px 12px; color:#f1f3f7; background:#252c38; cursor:pointer; }
+.graph-export-heading button:hover { background:#383348; border-color:#9146ff; }
+.graph-export-code { display:block; width:100%; flex:1; min-height:0; resize:none; box-sizing:border-box; padding:18px; border:1px solid #354052; border-radius:10px; outline:none; color:#d5e0f1; background:#141b25; font:12px/1.7 'JetBrains Mono',Consolas,monospace; white-space:pre; overflow:auto; }
+.graph-export-code:focus { border-color:#9146ff; }
+.graph-export-count { font-size:11px; color:#8492a6; }
+@media (max-width: 850px) { .graph-view-tabs { right:10px; top:10px; } .graph-view-tabs button { padding:8px; font-size:11px; } .graph-export-panel { padding:66px 12px 12px; } }
+
+/* Five compact, individually selectable graph layouts in the existing VIEW panel. */
+.orbit.theme-graphite .orbit-view-selector .orbit-layout-switch {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.orbit.theme-graphite .sidebar .orbit-layout-switch button {
+  min-height: 34px;
+  padding-inline: 2px;
+  font-size: 10px;
+}
+
+/* Five compact icon-only layout controls. */
+.orbit.theme-graphite .orbit-view-selector .orbit-layout-switch {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.orbit.theme-graphite .orbit-view-selector .orbit-layout-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 2px;
+}
+.orbit.theme-graphite .orbit-view-selector .orbit-layout-switch button:focus-visible {
+  outline: 2px solid #b58aff;
+  outline-offset: 2px;
+}

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import ForceGraph3D from 'react-force-graph-3d'
 import type { ForceGraphMethods } from 'react-force-graph-3d'
 import * as THREE from 'three'
-import { ArrowDownLeft, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, Container, Cuboid, Eye, EyeOff, Folder, FolderOpen, FileCode2, ArrowLeftRight, Tags, Layers3, Maximize2, Minus, Pin, PinOff, Plus, RotateCcw, Search, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, Container, Cuboid, Eye, EyeOff, Folder, FolderOpen, FileCode2, ArrowLeftRight, Tags, Layers3, Maximize2, Minus, Pin, PinOff, Plus, RotateCcw, Search, X, Radar, GitFork, Workflow, Boxes } from 'lucide-react'
 import { parseStepXml } from './parsers/stepXmlParser'
 import type { StepNode, StepLink, ParsedStepXml } from './parsers/stepXmlParser'
 import './App.css'
@@ -13,7 +13,8 @@ type Section = Category | 'references'
 type OrbitTheme = 'graphite'
 type ExplorerMode = 'model' | 'product'
 type DatasetSource = 'example' | 'local'
-type LayoutMode = 'spider' | 'hierarchy'
+type LayoutMode = 'radial' | 'hierarchy' | 'force' | 'flow' | 'cluster'
+type CenterTab = 'viewer' | 'mermaid'
 type GraphNode = StepNode & { x?: number; y?: number; z?: number; vx?: number; vy?: number; vz?: number; fx?: number; fy?: number; fz?: number }
 type GraphLink = { id: string; source: string | GraphNode; target: string | GraphNode; label: string; kind?: 'reference' | 'hierarchy' | 'container'; count?: number }
 
@@ -207,7 +208,7 @@ function clipToCard(from: THREE.Vector3, to: THREE.Vector3, card: THREE.Vector3,
 function makeRelationshipVisual(label: string, color: string, size: number, theme: OrbitTheme, showLabel: boolean, active: boolean): THREE.Group {
   const group = new THREE.Group()
   const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()])
-  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: active ? 0.98 : 0.24, depthTest: false })
+  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: active ? 0.98 : 0.52, depthTest: false })
   const line = new THREE.Line(geometry, material)
   line.renderOrder = 1
   group.add(line)
@@ -218,8 +219,10 @@ function makeRelationshipVisual(label: string, color: string, size: number, them
   const setPositions = (a: THREE.Vector3, b: THREE.Vector3) => { start = a; end = b }
   line.onBeforeRender = (renderer, _scene, camera) => {
     const viewport = renderer.getSize(new THREE.Vector2())
-    const a = clipToCard(start, end, start.clone().add(new THREE.Vector3(0, 23, 0)), camera, viewport, size)
-    const b = clipToCard(end, start, end.clone().add(new THREE.Vector3(0, 23, 0)), camera, viewport, size)
+    const startCard = start.clone().add(new THREE.Vector3(0, 23, 0))
+    const endCard = end.clone().add(new THREE.Vector3(0, 23, 0))
+    const a = clipToCard(startCard, endCard, startCard, camera, viewport, size)
+    const b = clipToCard(endCard, startCard, endCard, camera, viewport, size)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute
     positions.setXYZ(0, a.x, a.y, a.z)
     positions.setXYZ(1, b.x, b.y, b.z)
@@ -313,8 +316,42 @@ function sectionIcon(id: Section) {
   return <Container size={15} />
 }
 
+// Export the currently visible graph, not hidden nodes or relationships.
+function graphMermaid(graph: GraphData): string {
+  // Stable Mermaid-safe identifiers keep arbitrary STEP IDs out of diagram syntax.
+  const ids = new Map(graph.nodes.map((node, index) => [node.id, `n${index}`]))
+  const escapeLabel = (value: string): string => value
+    .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\r?\n/g, ' ')
+    .replace(/\|/g, '&#124;')
+  const lines = ['flowchart LR']
+  for (const node of graph.nodes) {
+    const id = ids.get(node.id)!
+    lines.push(`    ${id}["${escapeLabel(node.name)}<br/>${escapeLabel(node.id)}<br/>${escapeLabel(node.type)}"]`)
+  }
+  if (graph.nodes.length && graph.links.length) lines.push('')
+  for (const link of graph.links) {
+    const source = ids.get(endId(link.source))
+    const target = ids.get(endId(link.target))
+    if (!source || !target) continue
+    const label = `${link.label}${link.count && link.count > 1 ? ` ×${link.count}` : ''}`
+    lines.push(`    ${source} -->|"${escapeLabel(label)}"| ${target}`)
+  }
+  lines.push('', '    classDef products fill:#242d42,stroke:#818cf8,color:#ffffff',
+    '    classDef entities fill:#183b35,stroke:#10b981,color:#ffffff',
+    '    classDef containers fill:#382238,stroke:#ec4899,color:#ffffff')
+  for (const category of ['products', 'entities', 'containers'] as const) {
+    const categoryIds = graph.nodes.filter(node => node.category === category).map(node => ids.get(node.id))
+    if (categoryIds.length) lines.push(`    class ${categoryIds.join(',')} ${category}`)
+  }
+  return lines.join('\n')
+}
+
 function App() {
   const [mode, setMode] = useState<ExplorerMode>('product')
+  const [centerTab, setCenterTab] = useState<CenterTab>('viewer')
+  const [exportCopied, setExportCopied] = useState(false)
   const [parsed, setParsed] = useState<ParsedStepXml | null>(null)
   const [datasetSource, setDatasetSource] = useState<DatasetSource>('example')
   const [exampleParsed, setExampleParsed] = useState<ParsedStepXml | null>(null)
@@ -331,7 +368,7 @@ function App() {
   const [xmlLoading, setXmlLoading] = useState(false)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [layoutVersion, setLayoutVersion] = useState(0)
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('spider')
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('radial')
   const [layoutCenterId, setLayoutCenterId] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null)
@@ -511,6 +548,100 @@ function App() {
         positions.set(id, [radius * Math.cos(angle), radius * Math.sin(angle), 0])
       })
     }
+    if (layoutMode === 'radial') {
+      // Genuine hub-and-spoke layout: connected core objects radiate from the
+      // chosen CU (or graph center); GTINs and containers occupy outer spokes.
+      // Each ring reserves enough arc length for full-width node cards.
+      const nodeById = new Map(sourceNodes.filter(n => allowed.has(n.id)).map(n => [n.id, n]))
+      const peripheral = new Set([...nodeById.values()]
+        .filter(n => n.category === 'containers' || /(?:^|_)GTIN(?:_|$)/i.test(n.type ?? ''))
+        .map(n => n.id))
+      if (layoutCenter) peripheral.delete(layoutCenter)
+      const core = [...allowed].filter(id => !peripheral.has(id) && id !== layoutCenter)
+      const center = layoutCenter && allowed.has(layoutCenter) ? layoutCenter : core.shift()
+      positions.clear()
+      if (center) positions.set(center, [0, 0, 0])
+      // Reserve distinct sectors for the packaging branch, supplier lineage,
+      // and other core objects. Traverse within each sector to keep chains together.
+      const categoryOf = (id: string) => {
+        const type = nodeById.get(id)?.type ?? ''
+        if (/SupplierItem|DataPoolItem/i.test(type)) return 'supplier'
+        if (/prd_(?:CU|TU|SU)|SalesUnit/i.test(type)) return 'packaging'
+        return 'other'
+      }
+      const sectorOrder = ['supplier', 'packaging', 'other']
+      const sectorAngles: Record<string, number> = { supplier: 2.65, packaging: -0.65, other: 1.3 }
+      const coreGroups = new Map(sectorOrder.map(k => [k, [] as string[]]))
+      const unvisited = new Set(core)
+      for (const sector of sectorOrder) {
+        const members = core.filter(id => categoryOf(id) === sector)
+        const ordered: string[] = []
+        while (members.some(id => unvisited.has(id))) {
+          const root = members.find(id => unvisited.has(id) && (adjacency.get(id) ?? []).some(other => other === center || !unvisited.has(other)))
+            ?? members.find(id => unvisited.has(id))!
+          const pending = [root]
+          unvisited.delete(root)
+          while (pending.length) {
+            const current = pending.shift()!
+            ordered.push(current)
+            for (const neighbor of (adjacency.get(current) ?? []).sort()) {
+              if (unvisited.has(neighbor) && categoryOf(neighbor) === sector) {
+                unvisited.delete(neighbor); pending.push(neighbor)
+              }
+            }
+          }
+        }
+        coreGroups.set(sector, ordered)
+      }
+      const maxSector = Math.max(1, ...[...coreGroups.values()].map(v => v.length))
+      const coreRadius = Math.max(295, maxSector * 108)
+      for (const sector of sectorOrder) {
+        const members = coreGroups.get(sector) ?? []
+        const spread = Math.min(1.3, (members.length - 1) * 0.38)
+        members.forEach((id, i) => {
+          const angle = sectorAngles[sector] + (members.length === 1 ? 0 : -spread / 2 + spread * i / (members.length - 1))
+          // Alternating depths emphasize a connected branch, not a uniform ring.
+          const radius = coreRadius + (i % 2) * 65
+          positions.set(id, [radius * Math.cos(angle), radius * Math.sin(angle), 0])
+        })
+      }
+      // Place each peripheral object on the outward side of its nearest linked
+      // core object. Sample several candidate slots to avoid crowding and crossings.
+      const outerIds = [...peripheral].sort((a, b) => (adjacency.get(b)?.length ?? 0) - (adjacency.get(a)?.length ?? 0) || a.localeCompare(b))
+      const outerRadius = coreRadius + 255
+      const segmentsIntersect = (a: number[], b: number[], c: number[], d: number[]) => {
+        const cross = (p: number[], q: number[], r: number[]) => (q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0])
+        return cross(a,b,c)*cross(a,b,d) < 0 && cross(c,d,a)*cross(c,d,b) < 0
+      }
+      for (const id of outerIds) {
+        const anchors = (adjacency.get(id) ?? []).filter(other => positions.has(other))
+        const meanX = anchors.reduce((sum, other) => sum + positions.get(other)![0], 0) / Math.max(1, anchors.length)
+        const meanY = anchors.reduce((sum, other) => sum + positions.get(other)![1], 0) / Math.max(1, anchors.length)
+        const preferred = anchors.length ? Math.atan2(meanY, meanX) : -Math.PI / 2
+        let best: [number, number, number] = [0, 0, 0]
+        let bestScore = Infinity
+        for (let slot = 0; slot < 72; slot++) {
+          const angle = preferred + (slot === 0 ? 0 : (slot % 2 ? 1 : -1) * Math.ceil(slot / 2) * Math.PI / 36)
+          const candidate: [number, number, number] = [outerRadius * Math.cos(angle), outerRadius * Math.sin(angle), 0]
+          let score = Math.abs(Math.atan2(Math.sin(angle-preferred), Math.cos(angle-preferred))) * 190
+          for (const [other, point] of positions) {
+            const dx = Math.abs(point[0]-candidate[0]), dy = Math.abs(point[1]-candidate[1])
+            if (dx < 260 && dy < 135) score += 10000 + (260-dx)*(135-dy)
+            if (other !== id && anchors.includes(other)) continue
+          }
+          for (const anchor of anchors) {
+            const start = positions.get(anchor)!
+            for (const link of sourceLinks) {
+              if (hiddenLinks.includes(link.id) || link.source === id || link.target === id) continue
+              const p1 = positions.get(link.source), p2 = positions.get(link.target)
+              if (p1 && p2 && link.source !== anchor && link.target !== anchor && segmentsIntersect(start,candidate,p1,p2)) score += 1400
+            }
+          }
+          if (score < bestScore) { bestScore = score; best = candidate }
+        }
+        positions.set(id, best)
+      }
+    }
     if (layoutMode === 'hierarchy') {
       // Hierarchy edges are directed parent -> child. Reference/container edges never
       // change ancestry; their otherwise unplaced targets occupy lateral columns.
@@ -547,7 +678,7 @@ function App() {
       }
       const placeBranch = (id: string, left: number, level: number) => {
         const width = branchWidth(id)
-        positions.set(id, [(left + width / 2) * 300, -level * 260, 0])
+        positions.set(id, [(left + width / 2) * 370, -level * 315, 0])
         let next = left
         for (const child of children.get(id) ?? []) {
           placeBranch(child, next, level + 1)
@@ -579,9 +710,9 @@ function App() {
           const occupied = columns[side]
           let y = item.anchorY
           // Keep the side columns readable even when several nodes share a CU.
-          while (occupied.some(other => Math.abs(other - y) < 135)) y -= 150
+          while (occupied.some(other => Math.abs(other - y) < 180)) y -= 195
           occupied.push(y)
-          positions.set(item.id, [side === 0 ? -850 : 850, y, 0])
+          positions.set(item.id, [side === 0 ? -630 : 630, y, 0])
         }
       } else {
         // No CU/TU/SalesUnit nodes: use the normal spider arrangement.
@@ -597,6 +728,191 @@ function App() {
         }
       }
     }
+    if (layoutMode === 'force') {
+      // Spread: deliberately generous, deterministic spacing. Unlike Force,
+      // this mode does not attract related objects or run a simulation.
+      // Order by graph distance from the selected layout anchor, then category,
+      // so each row remains readable while preserving every reference.
+      positions.clear()
+      const ids = [...allowed].sort((a, b) => {
+        const distance = (depth.get(a) ?? 999) - (depth.get(b) ?? 999)
+        if (distance) return distance
+        const category = (sourceNodes.find(n => n.id === a)?.category ?? '').localeCompare(sourceNodes.find(n => n.id === b)?.category ?? '')
+        return category || a.localeCompare(b)
+      })
+      const columns = Math.max(3, Math.min(5, Math.ceil(Math.sqrt(ids.length * 1.5))))
+      const spacingX = 590
+      const spacingY = 340
+      const rows = Math.ceil(ids.length / columns)
+      ids.forEach((id, index) => {
+        const row = Math.floor(index / columns)
+        const column = index % columns
+        const itemsInRow = Math.min(columns, ids.length - row * columns)
+        const x = (column - (itemsInRow - 1) / 2) * spacingX
+        const y = ((rows - 1) / 2 - row) * spacingY
+        positions.set(id, [x, y, 0])
+      })
+    }
+    if (layoutMode === 'flow') {
+      // Directional left-to-right layers. Prefer source nodes as roots; cycles
+      // and disconnected components are assigned deterministic fallback layers.
+      positions.clear()
+      const ids = [...allowed].sort()
+      const edges = sourceLinks.filter(l => !hiddenLinks.includes(l.id) && allowed.has(l.source) && allowed.has(l.target))
+      const incoming = new Map(ids.map(id => [id, 0]))
+      const outgoing = new Map(ids.map(id => [id, [] as string[]]))
+      for (const edge of edges) {
+        outgoing.get(edge.source)?.push(edge.target)
+        incoming.set(edge.target, (incoming.get(edge.target) ?? 0) + 1)
+      }
+      const roots = ids.filter(id => incoming.get(id) === 0)
+      const ordered = [...roots, ...ids.filter(id => !roots.includes(id))]
+      const level = new Map<string, number>()
+      const pending = [...roots]
+      for (const id of roots) level.set(id, 0)
+      while (pending.length) {
+        const id = pending.shift()!
+        for (const next of outgoing.get(id) ?? []) {
+          const candidate = (level.get(id) ?? 0) + 1
+          if (!level.has(next)) { level.set(next, candidate); pending.push(next) }
+        }
+      }
+      // Longest path through the acyclic portion, with a hard bound for cycles.
+      for (let pass = 0; pass < ids.length; pass++) {
+        let changed = false
+        for (const id of ordered) for (const next of outgoing.get(id) ?? []) {
+          if (!level.has(id) || !level.has(next)) continue
+          if (next === id || (level.get(next) ?? 0) >= ids.length - 1) continue
+          const candidate = Math.min(ids.length - 1, (level.get(id) ?? 0) + 1)
+          if (candidate > (level.get(next) ?? 0)) { level.set(next, candidate); changed = true }
+        }
+        if (!changed) break
+      }
+      for (const id of ids) if (!level.has(id)) level.set(id, 0)
+      const columns = new Map<number, string[]>()
+      for (const id of ids) {
+        const column = level.get(id) ?? 0
+        if (!columns.has(column)) columns.set(column, [])
+        columns.get(column)!.push(id)
+      }
+      for (const [column, group] of columns) {
+        group.sort((a, b) => (adjacency.get(b)?.length ?? 0) - (adjacency.get(a)?.length ?? 0) || a.localeCompare(b))
+        group.forEach((id, i) => positions.set(id, [column * 405, (i - (group.length - 1) / 2) * 220, 0]))
+      }
+    }
+    if (layoutMode === 'cluster') {
+      // Distinct islands on a two-row grid. Each island has enough room for
+      // full-width cards, even when several categories contain multiple objects.
+      positions.clear()
+      const groups = new Map<string, string[]>()
+      for (const node of sourceNodes.filter(n => allowed.has(n.id))) {
+        const type = node.type ?? ''
+        const group = node.category === 'containers' ? 'Data Containers'
+          : node.category === 'entities' ? 'Entities'
+          : /SupplierItem/i.test(type) ? 'Suppliers'
+          : /DataPoolItem/i.test(type) ? 'Data Pool'
+          : 'Products'
+        if (!groups.has(group)) groups.set(group, [])
+        groups.get(group)!.push(node.id)
+      }
+      const order = ['Products', 'Suppliers', 'Data Pool', 'Entities', 'Data Containers']
+      const activeGroups = order.filter(group => (groups.get(group)?.length ?? 0) > 0)
+      const columnGap = 450
+      const rowGap = 540
+      const columns = Math.min(3, activeGroups.length)
+      activeGroups.forEach((group, groupIndex) => {
+        const ids = groups.get(group)!.sort()
+        const col = groupIndex % columns
+        const row = Math.floor(groupIndex / columns)
+        const cx = (col - (columns - 1) / 2) * columnGap
+        const cy = (0.5 - row) * rowGap
+        const nodeCols = ids.length > 3 ? 2 : 1
+        const nodeRows = Math.ceil(ids.length / nodeCols)
+        ids.forEach((id, i) => positions.set(id, [
+          cx + (i % nodeCols - (nodeCols - 1) / 2) * 270,
+          cy - (Math.floor(i / nodeCols) - (nodeRows - 1) / 2) * 175,
+          0,
+        ]))
+      })
+    }
+    // Fixed-pixel cards are wider than their graph anchors. Resolve actual
+    // card-sized overlaps in every mode without changing graph connectivity.
+    // Keep hierarchical levels aligned, and directional flow columns intact.
+    const collisionIds = [...positions.keys()].sort()
+    for (let pass = 0; pass < 100; pass++) {
+      let moved = false
+      for (let i = 0; i < collisionIds.length; i++) for (let j = i + 1; j < collisionIds.length; j++) {
+        const a = positions.get(collisionIds[i])!, b = positions.get(collisionIds[j])!
+        const dx = b[0] - a[0], dy = b[1] - a[1]
+        const overlapX = 255 - Math.abs(dx), overlapY = 125 - Math.abs(dy)
+        if (overlapX <= 0 || overlapY <= 0) continue
+        moved = true
+        if (layoutMode === 'flow' || layoutMode === 'hierarchy') {
+          const shift = (overlapY + 18) / 2
+          const direction = dy >= 0 ? 1 : -1
+          a[1] -= shift * direction; b[1] += shift * direction
+        } else if (overlapX < overlapY * 1.4) {
+          const shift = (overlapX + 8) / 2, direction = dx >= 0 ? 1 : -1
+          a[0] -= shift * direction; b[0] += shift * direction
+        } else {
+          const shift = (overlapY + 18) / 2, direction = dy >= 0 ? 1 : -1
+          a[1] -= shift * direction; b[1] += shift * direction
+        }
+      }
+      if (!moved) break
+    }
+    if (layoutMode === 'radial') {
+      // Push non-endpoint cards away from straight reference segments. This is
+      // a positional clearance pass; references remain real, unmodified links.
+      const edges = sourceLinks.filter(l => !hiddenLinks.includes(l.id) && allowed.has(l.source) && allowed.has(l.target))
+      for (let pass = 0; pass < 36; pass++) {
+        let adjusted = false
+        for (const edge of edges) {
+          const a = positions.get(edge.source)!, b = positions.get(edge.target)!
+          const vx = b[0]-a[0], vy = b[1]-a[1], lengthSq = vx*vx+vy*vy
+          if (lengthSq < 1) continue
+          for (const id of collisionIds) {
+            if (id === edge.source || id === edge.target || id === layoutCenter) continue
+            const point = positions.get(id)!
+            const t = Math.max(0, Math.min(1, ((point[0]-a[0])*vx+(point[1]-a[1])*vy)/lengthSq))
+            if (t < 0.06 || t > 0.94) continue
+            const nx = a[0]+t*vx, ny = a[1]+t*vy
+            const dx = point[0]-nx, dy = point[1]-ny
+            if (Math.abs(dx) > 155 || Math.abs(dy) > 90) continue
+            const distance = Math.max(1, Math.hypot(dx,dy))
+            const push = Math.min(32, (170-distance)*0.23)
+            const sign = dx* -vy + dy*vx >= 0 ? 1 : -1
+            const length = Math.sqrt(lengthSq)
+            point[0] += -vy/length*push*sign
+            point[1] += vx/length*push*sign
+            adjusted = true
+          }
+        }
+        if (!adjusted) break
+      }
+    }
+    if (layoutMode === 'radial') {
+      // Edge clearance can displace cards into one another; settle compact
+      // positions without expanding the entire constellation again.
+      for (let pass = 0; pass < 60; pass++) {
+        let moved = false
+        for (let i = 0; i < collisionIds.length; i++) for (let j = i + 1; j < collisionIds.length; j++) {
+          const a = positions.get(collisionIds[i])!, b = positions.get(collisionIds[j])!
+          const dx = b[0] - a[0], dy = b[1] - a[1]
+          const overlapX = 255 - Math.abs(dx), overlapY = 125 - Math.abs(dy)
+          if (overlapX <= 0 || overlapY <= 0) continue
+          moved = true
+          if (overlapX < overlapY * 1.4) {
+            const shift = (overlapX + 4) / 2, sign = dx >= 0 ? 1 : -1
+            a[0] -= shift * sign; b[0] += shift * sign
+          } else {
+            const shift = (overlapY + 4) / 2, sign = dy >= 0 ? 1 : -1
+            a[1] -= shift * sign; b[1] += shift * sign
+          }
+        }
+        if (!moved) break
+      }
+    }
     const nodes: GraphNode[] = sourceNodes.filter(n => allowed.has(n.id)).map(n => {
       const [x, y, z] = positions.get(n.id) ?? [0, 0, 0]
       return { ...n, x, y, z, fx: x, fy: y, fz: z }
@@ -607,13 +923,17 @@ function App() {
     return { nodes, links }
   }, [sourceNodes, sourceLinks, layoutVersion, layoutCenterId, layoutMode, hiddenNodes, hiddenLinks])
 
+  const exportText = useMemo(() => centerTab === 'mermaid' ? graphMermaid(graphData) : '', [centerTab, graphData])
+  const copyExport = async () => {
+    try { await navigator.clipboard.writeText(exportText); setExportCopied(true) } catch { setExportCopied(false) }
+  }
   const selectedNode = sourceNodes.find(n => n.id === selectedNodeId)
   const selectedLink = sourceLinks.find(l => l.id === selectedLinkId)
   // One neutral highlight for every reference connected to the selected object.
   // Direction remains available in the inspector, not through line color.
   const relationshipColor = (link: GraphLink): string => {
     if (selectedLinkId === link.id) return '#c4a0ff'
-    if (!selectedNodeId) return '#a5b2c4'
+    if (!selectedNodeId) return '#bdc9d9'
     return endId(link.source) === selectedNodeId || endId(link.target) === selectedNodeId
       ? '#cbd5e1'
       : '#455063'
@@ -703,7 +1023,7 @@ function App() {
     setHiddenNodes(previous => previous.filter(hiddenId => hiddenId !== id))
     setSelectedNodeId(id)
     setSelectedLinkId(null)
-    stopFocus()
+    // Selecting an object must never move the camera or reset orbit controls.
   }
   function zoom(factor: number) {
     const graph = graphRef.current
@@ -715,7 +1035,7 @@ function App() {
     graph.cameraPosition(controls.target.clone().add(offset), controls.target.clone(), 350)
   }
   function focusNode(id: string) {
-    if (layoutMode !== 'spider') return
+    if (layoutMode !== 'radial') return
     centerOnNode(id)
     setLayoutCenterId(id)
     focusRef.current = id
@@ -766,10 +1086,12 @@ function App() {
   // Wait for react-force-graph to receive the new nodes before framing them.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      frameVisibleGraph(graphRef.current, dimensions, 500, graphData.nodes)
+      const rect = containerRef.current?.getBoundingClientRect()
+      const size = rect ? { width: rect.width, height: rect.height } : { width: 800, height: 600 }
+      frameVisibleGraph(graphRef.current, size, 500, graphData.nodes)
     }, 180)
     return () => window.clearTimeout(timer)
-  }, [graphData, dimensions])
+  }, [graphData])
 
   function nodeRow(node: StepNode) {
     const hidden = hiddenNodes.includes(node.id)
@@ -780,7 +1102,7 @@ function App() {
       </button>
       <button className="icon-button" title={hidden ? 'Show object' : 'Hide object'} aria-label={hidden ? `Show ${node.name}` : `Hide ${node.name}`} onClick={() => toggleNode(node.id)}>{hidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
       <button className="icon-button copy-object-button" title={copiedId === node.id ? `Copied ID: ${node.id}` : `Copy object ID: ${node.id}`} aria-label={`Copy ID of ${node.name}`} onClick={() => copyObjectId(node.id)}>{copiedId === node.id ? <Check size={14} /> : <Copy size={14} />}</button>
-      {layoutMode === 'spider' && <button className={`icon-button ${focusedId === node.id ? 'active' : ''}`} disabled={hidden} title="Center camera on object" aria-label={`Center camera on ${node.name}`} onClick={() => focusedId === node.id ? stopFocus() : focusNode(node.id)}>{focusedId === node.id ? <PinOff size={14} /> : <Pin size={14} />}</button>}
+      {layoutMode === 'radial' && <button className={`icon-button ${focusedId === node.id ? 'active' : ''}`} disabled={hidden} title="Center camera on object" aria-label={`Center camera on ${node.name}`} onClick={() => focusedId === node.id ? stopFocus() : focusNode(node.id)}>{focusedId === node.id ? <PinOff size={14} /> : <Pin size={14} />}</button>}
     </div>
   }
   function linkRow(link: StepLink) {
@@ -821,8 +1143,18 @@ function App() {
           <button type="button" className={mode === 'product' ? 'active' : ''} aria-pressed={mode === 'product'} onClick={() => switchMode('product')}>Product Explorer</button>
         </div>
         <div className="orbit-layout-switch" role="group" aria-label="Graph layout">
-          <button type="button" className={layoutMode === 'spider' ? 'active' : ''} aria-pressed={layoutMode === 'spider'} onClick={() => { if (layoutMode !== 'spider') { stopFocus(); setLayoutMode('spider') } }} title="Radial graph layout">Spider</button>
-          <button type="button" className={layoutMode === 'hierarchy' ? 'active' : ''} aria-pressed={layoutMode === 'hierarchy'} onClick={() => { if (layoutMode !== 'hierarchy') { stopFocus(); setLayoutMode('hierarchy') } }} title="Parent-child graph layout">Hierarchy</button>
+          {([
+            ['radial', 'Radial', 'Concentric hub-and-spoke layout', Radar],
+            ['hierarchy', 'Hierarchy', 'Parent-child packaging hierarchy', GitFork],
+            ['force', 'Spread', 'Very spacious grid with wide separation between every object', Maximize2],
+            ['flow', 'Flow', 'Left-to-right reference dependencies', Workflow],
+            ['cluster', 'Cluster', 'Group by STEP object category and type', Boxes],
+          ] as const).map(([value, label, description, Icon]) =>
+            <button key={value} type="button" className={layoutMode === value ? 'active' : ''}
+              aria-label={`${label} layout`} aria-pressed={layoutMode === value}
+              onClick={() => { if (layoutMode !== value) { stopFocus(); setLayoutMode(value) } }}
+              title={`${label} — ${description}`}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></button>
+          )}
         </div>
       </div>
       <div className="orbit-dataset-selector sidebar-panel">
@@ -874,10 +1206,20 @@ function App() {
           <button type="button" title="Reset Layout" aria-label="Reset Layout" onClick={resetLayout}><RotateCcw size={17} /></button>
         </div>
       </section>
-      {layoutMode === 'spider' && focusedNode && <div className="focus-status"><div className="focus-heading"><Pin size={13} /> ORBITING OBJECT</div><strong>{focusedNode.name}</strong><small>{focusedNode.id}</small><button onClick={stopFocus}>Release focus</button></div>}
+      {layoutMode === 'radial' && focusedNode && <div className="focus-status"><div className="focus-heading"><Pin size={13} /> ORBITING OBJECT</div><strong>{focusedNode.name}</strong><small>{focusedNode.id}</small><button onClick={stopFocus}>Release focus</button></div>}
     </aside>
     <main className="graph" ref={containerRef}>
       <div className="stellar-static-grid" aria-hidden="true" />
+      <div className="graph-view-tabs" role="tablist" aria-label="Graph representation">
+        <button type="button" role="tab" aria-selected={centerTab === 'viewer'} className={centerTab === 'viewer' ? 'active' : ''} onClick={() => { setCenterTab('viewer'); setExportCopied(false) }}>Viewer</button>
+        <button type="button" role="tab" aria-selected={centerTab === 'mermaid'} className={centerTab === 'mermaid' ? 'active' : ''} onClick={() => { setCenterTab('mermaid'); setExportCopied(false) }}>Mermaid</button>
+      </div>
+      {centerTab !== 'viewer' && <section className="graph-export-panel" aria-label="Mermaid diagram representation">
+        <div className="graph-export-heading"><div><strong>Mermaid diagram</strong><p>Copy this flowchart into mermaid.live or diagrams.net → Arrange → Insert → Mermaid. Exports visible objects and relationships.</p></div><button type="button" onClick={() => void copyExport()} disabled={!exportText}><Copy size={15} />{exportCopied ? 'Copied' : 'Copy code'}</button></div>
+        <textarea className="graph-export-code" readOnly spellCheck={false} value={exportText} aria-label="Export code" />
+        <span className="graph-export-count">{graphData.nodes.length} objects · {graphData.links.length} relationships · Current {mode === 'model' ? 'Data Model' : 'Product Explorer'} view</span>
+      </section>}
+      <div className={centerTab === 'viewer' ? 'graph-3d-visible' : 'graph-3d-hidden'} aria-hidden={centerTab !== 'viewer'}>
       <ForceGraph3D<GraphNode, GraphLink>
         key={`${mode}:${xmlName}:${fontsReady}:${layoutMode}:${layoutVersion}`} ref={graphRef} graphData={graphData} width={dimensions.width} height={dimensions.height}
         backgroundColor={THEME_META[theme].background} showNavInfo={false} enableNodeDrag={true}
@@ -899,6 +1241,7 @@ function App() {
         }}
         onNodeClick={n => selectNode(n.id)} onLinkClick={l => selectLink(l.id)} onNodeDragEnd={handleDragEnd}
       />
+      </div>
     </main>
     <aside className="details inspector">
       <div className="inspector-header"><h3>{mode === 'model' ? 'Type Details' : 'Object Details'}</h3><span className="inspector-subheading">{mode === 'model' ? 'Observed type relationships' : 'STEP Object Inspector'}</span></div>
