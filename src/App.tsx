@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import ForceGraph3D from 'react-force-graph-3d'
 import type { ForceGraphMethods } from 'react-force-graph-3d'
 import * as THREE from 'three'
-import { ArrowDownLeft, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, Container, Cuboid, Eye, EyeOff, Folder, FolderOpen, FileCode2, ArrowLeftRight, GripVertical, Tags, Layers3, Maximize2, Minus, Pin, PinOff, Plus, RotateCcw, Search, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Check, ChevronDown, ChevronRight, Copy, Container, Cuboid, Eye, EyeOff, Folder, FolderOpen, FileCode2, ArrowLeftRight, Tags, Layers3, Maximize2, Minus, Pin, PinOff, Plus, RotateCcw, Search, X } from 'lucide-react'
 import { parseStepXml } from './parsers/stepXmlParser'
 import type { StepNode, StepLink, ParsedStepXml } from './parsers/stepXmlParser'
 import './App.css'
@@ -12,6 +12,7 @@ type Category = 'products' | 'entities' | 'containers'
 type Section = Category | 'references'
 type OrbitTheme = 'graphite'
 type ExplorerMode = 'model' | 'product'
+type DatasetSource = 'example' | 'local'
 type LayoutMode = 'spider' | 'hierarchy'
 type GraphNode = StepNode & { x?: number; y?: number; z?: number; vx?: number; vy?: number; vz?: number; fx?: number; fy?: number; fz?: number }
 type GraphLink = { id: string; source: string | GraphNode; target: string | GraphNode; label: string; kind?: 'reference' | 'hierarchy' | 'container'; count?: number }
@@ -20,7 +21,7 @@ function endId(end: string | GraphNode): string {
   return typeof end === 'string' ? end : end.id
 }
 type GraphData = { nodes: GraphNode[]; links: GraphLink[] }
-type CameraControls = { target: THREE.Vector3; update?: () => void }
+type CameraControls = { target: THREE.Vector3; update?: () => void; autoRotate?: boolean; enableDamping?: boolean; rotateSpeed?: number; dampingFactor?: number }
 
 const sections: { id: Section; label: string }[] = [
   { id: 'products', label: 'Products' }, { id: 'entities', label: 'Entities' },
@@ -206,7 +207,7 @@ function clipToCard(from: THREE.Vector3, to: THREE.Vector3, card: THREE.Vector3,
 function makeRelationshipVisual(label: string, color: string, size: number, theme: OrbitTheme, showLabel: boolean, active: boolean): THREE.Group {
   const group = new THREE.Group()
   const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()])
-  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: active ? 0.95 : 0.65, depthTest: false })
+  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: active ? 0.98 : 0.24, depthTest: false })
   const line = new THREE.Line(geometry, material)
   line.renderOrder = 1
   group.add(line)
@@ -315,6 +316,10 @@ function sectionIcon(id: Section) {
 function App() {
   const [mode, setMode] = useState<ExplorerMode>('product')
   const [parsed, setParsed] = useState<ParsedStepXml | null>(null)
+  const [datasetSource, setDatasetSource] = useState<DatasetSource>('example')
+  const [exampleParsed, setExampleParsed] = useState<ParsedStepXml | null>(null)
+  const localParsedRef = useRef<ParsedStepXml | null>(null)
+  const [exampleError, setExampleError] = useState<string | null>(null)
   const [xmlName, setXmlName] = useState('')
   const [xmlFiles, setXmlFiles] = useState<string[]>([])
   const localFilesRef = useRef<Map<string, File>>(new Map())
@@ -344,7 +349,7 @@ function App() {
       .catch(() => {})
     return () => { active = false }
   }, [])
-  const [showLinkLabels, setShowLinkLabels] = useState(true)
+  const [showLinkLabels, setShowLinkLabels] = useState(false)
   const theme: OrbitTheme = 'graphite'
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const sourceNodes = (mode === 'model' ? parsed?.model.nodes : parsed?.product.nodes) ?? EMPTY_NODES
@@ -352,61 +357,7 @@ function App() {
   const containerRef = useRef<HTMLDivElement>(null)
   const graphRef = useRef<ForceGraphMethods<GraphNode, GraphLink> | undefined>(undefined)
   const focusRef = useRef<string | null>(null)
-  const lastFocusPosition = useRef<THREE.Vector3 | null>(null)
-  const draggingFocusedNode = useRef(false)
   const fitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  type ToolbarCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-  const [toolbarCorner, setToolbarCorner] = useState<ToolbarCorner>('bottom-right')
-  const [toolbarDrag, setToolbarDrag] = useState<{ left: number; top: number } | null>(null)
-  const toolbarRef = useRef<HTMLDivElement>(null)
-  const toolbarPointer = useRef<{ id: number; offsetX: number; offsetY: number; moved: boolean } | null>(null)
-
-  function beginToolbarDrag(event: React.PointerEvent<HTMLButtonElement>) {
-    if (event.button !== 0 || !containerRef.current || !toolbarRef.current) return
-    const bounds = containerRef.current.getBoundingClientRect()
-    const toolbarBounds = toolbarRef.current.getBoundingClientRect()
-    toolbarPointer.current = {
-      id: event.pointerId,
-      offsetX: event.clientX - toolbarBounds.left,
-      offsetY: event.clientY - toolbarBounds.top,
-      moved: false,
-    }
-    setToolbarDrag({ left: toolbarBounds.left - bounds.left, top: toolbarBounds.top - bounds.top })
-    event.currentTarget.setPointerCapture(event.pointerId)
-    event.preventDefault()
-  }
-
-  function moveToolbarDrag(event: React.PointerEvent<HTMLButtonElement>) {
-    const pointer = toolbarPointer.current
-    const container = containerRef.current
-    const toolbar = toolbarRef.current
-    if (!pointer || pointer.id !== event.pointerId || !container || !toolbar) return
-    const bounds = container.getBoundingClientRect()
-    const width = toolbar.offsetWidth
-    const height = toolbar.offsetHeight
-    const left = Math.max(8, Math.min(bounds.width - width - 8, event.clientX - bounds.left - pointer.offsetX))
-    const top = Math.max(8, Math.min(bounds.height - height - 8, event.clientY - bounds.top - pointer.offsetY))
-    pointer.moved = true
-    setToolbarDrag({ left, top })
-  }
-
-  function endToolbarDrag(event: React.PointerEvent<HTMLButtonElement>) {
-    const pointer = toolbarPointer.current
-    if (!pointer || pointer.id !== event.pointerId) return
-    const bounds = containerRef.current?.getBoundingClientRect()
-    const toolbar = toolbarRef.current
-    if (bounds && toolbar) {
-      const rect = toolbar.getBoundingClientRect()
-      const centerX = rect.left + rect.width / 2 - bounds.left
-      const centerY = rect.top + rect.height / 2 - bounds.top
-      setToolbarCorner(`${centerY < bounds.height / 2 ? 'top' : 'bottom'}-${centerX < bounds.width / 2 ? 'left' : 'right'}` as ToolbarCorner)
-    }
-    toolbarPointer.current = null
-    setToolbarDrag(null)
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
-  }
-
-
   const resetForGraph = (next: ParsedStepXml, nextMode: ExplorerMode) => {
     const first = (nextMode === 'model' ? next.model.nodes : next.product.nodes)[0]?.id ?? ''
     stopFocus()
@@ -419,7 +370,36 @@ function App() {
     setLayoutVersion(v => v + 1)
   }
 
-  // STEPXML is never fetched from a server. The browser reads only files explicitly selected by the user.
+  // Only the public, fictional example is fetched. User STEPXML is read locally in the browser.
+  useEffect(() => {
+    let active = true
+    if (datasetSource !== 'example') return
+    fetch(`${import.meta.env.BASE_URL}examples/example-product.xml`)
+      .then(response => { if (!response.ok) throw new Error('Example unavailable'); return response.text() })
+      .then(xml => {
+        if (!active) return
+        const next = parseStepXml(xml)
+        setExampleParsed(next)
+        setParsed(next)
+      })
+      .catch(() => { if (active) setExampleError('Unable to load the built-in example dataset.') })
+    return () => { active = false }
+  }, [datasetSource])
+  const selectDataset = (source: DatasetSource) => {
+    setDatasetSource(source)
+    const next = source === 'example' ? exampleParsed : localParsedRef.current
+    if (next) resetForGraph(next, mode)
+    else {
+      stopFocus()
+      setSelectedNodeId(null)
+      setSelectedLinkId(null)
+      setHiddenNodes([])
+      setHiddenLinks([])
+      setLayoutVersion(v => v + 1)
+    }
+    setParsed(next)
+  }
+
   const loadXml = async (filename: string) => {
     const file = localFilesRef.current.get(filename)
     if (!file) { setXmlError('Select a local STEPXML file or folder first.'); return }
@@ -428,7 +408,8 @@ function App() {
     try {
       const next = parseStepXml(await file.text())
       resetForGraph(next, mode)
-      setParsed(next)
+      localParsedRef.current = next
+      if (datasetSource === 'local') setParsed(next)
       setXmlName(filename)
     } catch {
       // Never include parser errors or XML content in the UI or diagnostic logs.
@@ -447,6 +428,8 @@ function App() {
     }
     if (!files.size) { setXmlListError('No XML files found in the selection.'); return }
     localFilesRef.current = files
+    localParsedRef.current = null
+    setDatasetSource('local')
     setXmlFiles([...files.keys()].sort((a, b) => a.localeCompare(b)))
     setXmlFoldersOpen(['', ...new Set([...files.keys()].flatMap(name => {
       const parts = name.split('/')
@@ -629,11 +612,11 @@ function App() {
   // One neutral highlight for every reference connected to the selected object.
   // Direction remains available in the inspector, not through line color.
   const relationshipColor = (link: GraphLink): string => {
-    if (selectedLinkId === link.id) return '#f8fafc'
+    if (selectedLinkId === link.id) return '#c4a0ff'
     if (!selectedNodeId) return '#a5b2c4'
     return endId(link.source) === selectedNodeId || endId(link.target) === selectedNodeId
-      ? '#e2e8f0'
-      : '#526174'
+      ? '#cbd5e1'
+      : '#455063'
   }
   const relationshipActive = (link: GraphLink): boolean =>
     selectedLinkId === link.id ||
@@ -665,42 +648,22 @@ function App() {
 
   const stopFocus = useCallback(() => {
     focusRef.current = null
-    draggingFocusedNode.current = false
-    lastFocusPosition.current = null
     setFocusedId(null)
   }, [])
 
-  // Follow the moving centerpiece while leaving its physical position unconstrained.
+  // Camera movement is exclusively user-controlled. No animation loop or idle rotation.
+  // A lower OrbitControls rotateSpeed makes pointer dragging precise and predictable.
   useEffect(() => {
-    let active = true
-    let frame = 0
-    const follow = () => {
-      if (!active) return
-      const id = focusRef.current
-      const graph = graphRef.current
-      if (id && graph && !draggingFocusedNode.current) {
-        const node = graphData.nodes.find(n => n.id === id)
-        const camera = graph.camera()
-        const controls = graph.controls() as CameraControls | undefined
-        if (node && camera && controls?.target && node.x !== undefined && node.y !== undefined && node.z !== undefined) {
-          const next = new THREE.Vector3(node.x, node.y, node.z)
-          if (lastFocusPosition.current) {
-            const delta = next.clone().sub(lastFocusPosition.current)
-            if (delta.lengthSq() > 0.000001) {
-              camera.position.add(delta)
-              controls.target.add(delta)
-              controls.update?.()
-            }
-          }
-          lastFocusPosition.current = next
-        }
-      }
-      frame = requestAnimationFrame(follow)
-    }
-    frame = requestAnimationFrame(follow)
-    return () => { active = false; cancelAnimationFrame(frame) }
-  }, [graphData])
-
+    const timer = window.setTimeout(() => {
+      const controls = graphRef.current?.controls() as CameraControls | undefined
+      if (!controls) return
+      controls.autoRotate = false
+      controls.rotateSpeed = 0.375
+      controls.enableDamping = false
+      controls.update?.()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [mode, layoutMode, layoutVersion, xmlName, fontsReady])
 
   useEffect(() => () => { if (fitTimer.current) clearTimeout(fitTimer.current) }, [])
 
@@ -756,7 +719,17 @@ function App() {
     centerOnNode(id)
     setLayoutCenterId(id)
     focusRef.current = id
-    lastFocusPosition.current = null
+    const graph = graphRef.current
+    const node = graphData.nodes.find(n => n.id === id)
+    const camera = graph?.camera()
+    const controls = graph?.controls() as CameraControls | undefined
+    if (controls?.autoRotate) controls.autoRotate = false
+    const target = new THREE.Vector3(node?.x ?? 0, node?.y ?? 0, node?.z ?? 0)
+    // Move the camera's look-at target to this object, but never start rotation.
+    if (graph && camera) {
+      const offset = camera.position.clone().sub(controls?.target ?? new THREE.Vector3())
+      graph.cameraPosition(target.clone().add(offset), target, 500)
+    }
     setFocusedId(id)
   }
   function toggleNode(id: string) {
@@ -785,19 +758,7 @@ function App() {
   }
   function selectLink(id: string) { setSelectedLinkId(id); setSelectedNodeId(null) }
 
-  function handleNodeDrag(node: GraphNode) {
-    if (focusRef.current === node.id) {
-      // Do not move the camera while the drag library projects pointer movement.
-      draggingFocusedNode.current = true
-    }
-  }
-
   function handleDragEnd(node: GraphNode) {
-    if (focusRef.current === node.id) {
-      // Resume following from the new position, without applying drag delta.
-      lastFocusPosition.current = new THREE.Vector3(node.x ?? 0, node.y ?? 0, node.z ?? 0)
-      draggingFocusedNode.current = false
-    }
     node.fx = node.x; node.fy = node.y; node.fz = node.z
     node.vx = 0; node.vy = 0; node.vz = 0
   }
@@ -819,7 +780,7 @@ function App() {
       </button>
       <button className="icon-button" title={hidden ? 'Show object' : 'Hide object'} aria-label={hidden ? `Show ${node.name}` : `Hide ${node.name}`} onClick={() => toggleNode(node.id)}>{hidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
       <button className="icon-button copy-object-button" title={copiedId === node.id ? `Copied ID: ${node.id}` : `Copy object ID: ${node.id}`} aria-label={`Copy ID of ${node.name}`} onClick={() => copyObjectId(node.id)}>{copiedId === node.id ? <Check size={14} /> : <Copy size={14} />}</button>
-      {layoutMode === 'spider' && <button className={`icon-button ${focusedId === node.id ? 'active' : ''}`} disabled={hidden} title="Focus object" aria-label={`Focus ${node.name}`} onClick={() => focusedId === node.id ? stopFocus() : focusNode(node.id)}>{focusedId === node.id ? <PinOff size={14} /> : <Pin size={14} />}</button>}
+      {layoutMode === 'spider' && <button className={`icon-button ${focusedId === node.id ? 'active' : ''}`} disabled={hidden} title="Center camera on object" aria-label={`Center camera on ${node.name}`} onClick={() => focusedId === node.id ? stopFocus() : focusNode(node.id)}>{focusedId === node.id ? <PinOff size={14} /> : <Pin size={14} />}</button>}
     </div>
   }
   function linkRow(link: StepLink) {
@@ -853,7 +814,8 @@ function App() {
   return <div className={`orbit theme-${theme}`}>
     <aside className="sidebar">
       <div className="brand"><svg className="orbit-brand-mark" viewBox="0 0 64 64" role="img" aria-label="Orbit cube logo"><defs><linearGradient id="orbit-logo-purple" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#C4A1FF"/><stop offset="1" stopColor="#9146FF"/></linearGradient></defs><path d="M32 5 56 18.5V45.5L32 59 8 45.5V18.5Z" fill="#251B36" stroke="url(#orbit-logo-purple)" strokeWidth="4" strokeLinejoin="round"/><path d="M8 18.5 32 32 56 18.5M32 32V59" fill="none" stroke="#B58AFF" strokeWidth="3.5" strokeLinejoin="round"/><path d="M32 5 56 18.5 32 32 8 18.5Z" fill="#9146FF" fillOpacity=".33"/><path d="M32 32 56 18.5V45.5L32 59Z" fill="#7134C6" fillOpacity=".35"/></svg><span className="orbit-brand-wordmark">ORBIT</span></div>
-      <div className="orbit-view-selector" aria-label="Viewer and layout settings">
+      <div className="orbit-view-selector sidebar-panel" aria-label="Viewer and layout settings">
+        <div className="sidebar-panel-heading">VIEW</div>
         <div className="orbit-mode-switch" role="group" aria-label="Explorer mode">
           <button type="button" className={mode === 'model' ? 'active' : ''} aria-pressed={mode === 'model'} onClick={() => switchMode('model')}>Data Model</button>
           <button type="button" className={mode === 'product' ? 'active' : ''} aria-pressed={mode === 'product'} onClick={() => switchMode('product')}>Product Explorer</button>
@@ -863,7 +825,16 @@ function App() {
           <button type="button" className={layoutMode === 'hierarchy' ? 'active' : ''} aria-pressed={layoutMode === 'hierarchy'} onClick={() => { if (layoutMode !== 'hierarchy') { stopFocus(); setLayoutMode('hierarchy') } }} title="Parent-child graph layout">Hierarchy</button>
         </div>
       </div>
-      <div className="stepxml-source">
+      <div className="orbit-dataset-selector sidebar-panel">
+        <div className="sidebar-panel-heading">DATASET</div>
+        <div className="orbit-mode-switch" role="group" aria-label="Dataset source">
+          <button type="button" className={datasetSource === 'example' ? 'active' : ''} aria-pressed={datasetSource === 'example'} onClick={() => selectDataset('example')}>Example</button>
+          <button type="button" className={datasetSource === 'local' ? 'active' : ''} aria-pressed={datasetSource === 'local'} onClick={() => selectDataset('local')}>My Files</button>
+        </div>
+        {datasetSource === 'example' && <p className="orbit-dataset-note">Fictional STEP product · {exampleParsed ? `${exampleParsed.product.nodes.length} objects` : exampleError || 'Loading example…'}</p>}
+        {datasetSource === 'local' && <p className="orbit-dataset-note">Your STEPXML files are read locally in your browser and are not uploaded to Orbit or GitHub.</p>}
+      </div>
+      <div className="stepxml-source" style={datasetSource === 'example' ? { display: 'none' } : undefined}>
         <div className="stepxml-source-heading"><span>LOCAL STEPXML</span><div className="local-file-actions"><button type="button" onClick={() => filePickerRef.current?.click()} title="Open local XML files" aria-label="Open local XML files"><FileCode2 size={15} /></button><button type="button" onClick={() => folderPickerRef.current?.click()} title="Open local XML folder" aria-label="Open local XML folder"><FolderOpen size={15} /></button></div></div>
         <input ref={filePickerRef} className="local-file-input" type="file" accept=".xml,text/xml,application/xml" multiple onChange={e => { importLocalFiles(e.target.files, false); e.target.value = '' }} />
         <input ref={element => { folderPickerRef.current = element; if (element) element.setAttribute('webkitdirectory', '') }} className="local-file-input" type="file" multiple onChange={e => { importLocalFiles(e.target.files, true); e.target.value = '' }} />
@@ -871,8 +842,8 @@ function App() {
         {xmlListError && <p className="stepxml-error" role="alert">{xmlListError}</p>}
         {xmlError && <p className="stepxml-error" role="alert">{xmlError}</p>}
       </div>
+      <div className="sidebar-panel-heading sidebar-objects-heading">OBJECTS</div>
       <div className="search-box"><Search size={15} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ID, name, type..." aria-label="Search STEP objects" />{search && <button onClick={() => setSearch('')} aria-label="Clear search"><X size={14} /></button>}</div>
-      <div className="explorer-actions"><button onClick={() => { setHiddenNodes([]); setHiddenLinks([]) }} title="Show all" aria-label="Show all"><Eye size={15} /></button><button onClick={() => { stopFocus(); setHiddenNodes(sourceNodes.map(n => n.id)); setHiddenLinks(sourceLinks.map(l => l.id)) }} title="Hide all" aria-label="Hide all"><EyeOff size={15} /></button></div>
       <div className="explorer-sections">{sections.map(section => {
         const isExpanded = expanded.includes(section.id)
         const items = section.id === 'references' ? sourceLinks.filter(l => matches(`${l.label} ${l.source} ${l.target} ${l.id}`)) : sourceNodes.filter(n => n.category === section.id && matches(`${n.name} ${n.id} ${n.type}`))
@@ -886,23 +857,26 @@ function App() {
           {isExpanded && <div className="section-content">{items.length ? section.id === 'references' ? (items as StepLink[]).map(linkRow) : (items as StepNode[]).map(nodeRow) : <p className="empty-section">No matches</p>}</div>}
         </div>
       })}</div>
-      {layoutMode === 'spider' && focusedNode && <div className="focus-status"><div className="focus-heading"><Pin size={13} /> FOCUS MODE</div><strong>{focusedNode.name}</strong><small>{focusedNode.id}</small><button onClick={stopFocus}>Release focus</button></div>}
+      <section className="sidebar-graph-controls sidebar-panel" aria-label="Graph controls">
+        <div className="sidebar-panel-heading">GRAPH CONTROLS</div>
+        <button type="button" className={`sidebar-relationship-toggle ${showLinkLabels ? 'active' : ''}`} onClick={() => setShowLinkLabels(value => !value)} aria-pressed={showLinkLabels}>
+          <Tags size={16} /> <span>Relationship labels</span> {showLinkLabels ? <Eye size={16} aria-label="Labels visible" /> : <EyeOff size={16} aria-label="Labels hidden" />}
+        </button>
+        <div className="sidebar-size-control">
+          <label htmlFor="orbit-label-size">Label size</label>
+          <input id="orbit-label-size" type="range" min="60" max="150" step="5" value={labelSize} onChange={e => setLabelSize(Number(e.target.value))} />
+          <output htmlFor="orbit-label-size">{labelSize}%</output>
+        </div>
+        <div className="sidebar-navigation-actions">
+          <button type="button" title="Zoom in" aria-label="Zoom in" onClick={() => zoom(0.8)}><Plus size={17} /></button>
+          <button type="button" title="Zoom out" aria-label="Zoom out" onClick={() => zoom(1.25)}><Minus size={17} /></button>
+          <button type="button" title="Fit to View" aria-label="Fit to View" onClick={fitToView}><Maximize2 size={17} /></button>
+          <button type="button" title="Reset Layout" aria-label="Reset Layout" onClick={resetLayout}><RotateCcw size={17} /></button>
+        </div>
+      </section>
+      {layoutMode === 'spider' && focusedNode && <div className="focus-status"><div className="focus-heading"><Pin size={13} /> ORBITING OBJECT</div><strong>{focusedNode.name}</strong><small>{focusedNode.id}</small><button onClick={stopFocus}>Release focus</button></div>}
     </aside>
     <main className="graph" ref={containerRef}>
-      <div ref={toolbarRef} className={`graph-controls dock-${toolbarCorner} ${toolbarDrag ? 'is-dragging' : ''}`} style={toolbarDrag ? { left: toolbarDrag.left, top: toolbarDrag.top, right: 'auto', bottom: 'auto' } : undefined} aria-label="Graph display and navigation controls">
-        <button type="button" className="toolbar-drag-handle" title="Drag to move toolbar; releases at nearest corner" aria-label="Drag toolbar to a corner" onPointerDown={beginToolbarDrag} onPointerMove={moveToolbarDrag} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag}><GripVertical size={17} /></button>
-        <button type="button" className={`orbit-label-toggle ${showLinkLabels ? 'active' : ''}`} onClick={() => setShowLinkLabels(value => !value)} title={showLinkLabels ? 'Hide relationship labels' : 'Show relationship labels'} aria-label={showLinkLabels ? 'Hide relationship labels' : 'Show relationship labels'} aria-pressed={showLinkLabels}><Tags size={18} /></button>
-        <div className="vertical-control-divider" />
-        <label className="vertical-control-label" htmlFor="orbit-label-size">Size</label>
-        <input id="orbit-label-size" className="vertical-size-slider" aria-label="Label size" type="range" min="60" max="150" step="5" value={labelSize} onChange={e => setLabelSize(Number(e.target.value))} />
-        <span className="vertical-size-value">{labelSize}%</span>
-        <div className="vertical-control-divider" />
-        <button title="Zoom in" aria-label="Zoom in" onClick={() => zoom(0.8)}><Plus size={17} /></button>
-        <button title="Zoom out" aria-label="Zoom out" onClick={() => zoom(1.25)}><Minus size={17} /></button>
-        <div className="vertical-control-divider" />
-        <button title="Fit to View" aria-label="Fit to View" onClick={fitToView}><Maximize2 size={17} /></button>
-        <button title="Reset Layout" aria-label="Reset Layout" onClick={resetLayout}><RotateCcw size={17} /></button>
-      </div>
       <div className="stellar-static-grid" aria-hidden="true" />
       <ForceGraph3D<GraphNode, GraphLink>
         key={`${mode}:${xmlName}:${fontsReady}:${layoutMode}:${layoutVersion}`} ref={graphRef} graphData={graphData} width={dimensions.width} height={dimensions.height}
@@ -923,7 +897,7 @@ function App() {
           relationship.setEndpoints?.(new THREE.Vector3(positions.start.x, positions.start.y, positions.start.z), new THREE.Vector3(positions.end.x, positions.end.y, positions.end.z))
           return true
         }}
-        onNodeClick={n => selectNode(n.id)} onLinkClick={l => selectLink(l.id)} onNodeDrag={handleNodeDrag} onNodeDragEnd={handleDragEnd}
+        onNodeClick={n => selectNode(n.id)} onLinkClick={l => selectLink(l.id)} onNodeDragEnd={handleDragEnd}
       />
     </main>
     <aside className="details inspector">

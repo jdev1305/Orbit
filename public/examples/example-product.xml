@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fully fictional STEPXML demonstration. No real supplier, product or GTIN data. -->
+<STEP-ProductInformation>
+  <Products>
+    <Product ID="prd_CU-EXAMPLE-001" UserTypeID="prd_CU_RegularItem">
+      <Name>Orbit Example Coffee 250g</Name>
+      <Values>
+        <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
+      </Values>
+      <References>
+        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
+        <ProductCrossReference Type="rpe_GoldenSupplierItem" ProductID="prd_GSI-EXAMPLE-001" />
+      </References>
+      <DataContainer ID="dct_EXAMPLE-001" UserTypeID="dct_PackagingInformation">
+        <Name>dct_PackagingInformation</Name>
+        <Values>
+          <Value AttributeID="att_ExampleField">Demo value</Value>
+        </Values>
+      </DataContainer>
+      <DataContainer ID="dct_EXAMPLE-002" UserTypeID="dct_MarketingInformation">
+        <Name>dct_MarketingInformation</Name>
+        <Values>
+          <Value AttributeID="att_ExampleField">Demo value</Value>
+        </Values>
+      </DataContainer>
+    </Product>
+    <Product ID="prd_TU-EXAMPLE-001" UserTypeID="prd_TU_RegularItem" ParentID="prd_CU-EXAMPLE-001">
+      <Name>Coffee Case of 6</Name>
+      <Values>
+        <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
+      </Values>
+      <References>
+        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-002" />
+      </References>
+      <DataContainer ID="dct_EXAMPLE-003" UserTypeID="dct_LogisticsInformation">
+        <Name>Logistics details</Name>
+      </DataContainer>
+    </Product>
+    <Product ID="prd_TU-EXAMPLE-002" UserTypeID="prd_TU_RegularItem" ParentID="prd_TU-EXAMPLE-001">
+      <Name>Coffee Pallet</Name>
+      <Values>
+        <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
+      </Values>
+      <References>
+        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-003" />
+      </References>
+    </Product>
+    <Product ID="prd_SU-EXAMPLE-001" UserTypeID="prd_SalesUnit" ParentID="prd_CU-EXAMPLE-001">
+      <Name>Coffee Retail Sales Unit</Name>
+      <Values>
+        <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
+      </Values>
+      <References>
+        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
+      </References>
+    </Product>
+    <Product ID="prd_GSI-EXAMPLE-001" UserTypeID="prd_GoldenSupplierItem">
+      <Name>Golden Coffee Supplier Item</Name>
+      <Values>
+        <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
+      </Values>
+      <References>
+        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
+        <ProductCrossReference Type="rpe_SupplierItem" ProductID="prd_SI-EXAMPLE-001" />
+      </References>
+    </Product>
+    <Product ID="prd_SI-EXAMPLE-001" UserTypeID="prd_SupplierItem">
+      <Name>Example Supplier Coffee</Name>
+      <Values>
+        <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
+      </Values>
+      <References>
+        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
+        <ProductCrossReference Type="rpe_DataPoolItem" ProductID="prd_DPI-EXAMPLE-001" />
+      </References>
+    </Product>
+    <Product ID="prd_DPI-EXAMPLE-001" UserTypeID="prd_DataPoolItem">
+      <Name>GS1 Example Coffee</Name>
+      <Values>
+        <Value AttributeID="att_ExampleDescription">Synthetic demonstration only</Value>
+      </Values>
+      <References>
+        <ProductCrossReference Type="rpe_GTIN" ProductID="ent_GTIN-EXAMPLE-001" />
+      </References>
+    </Product>
+  </Products>
+  <Entities>
+    <Entity ID="ent_GTIN-EXAMPLE-001" UserTypeID="ent_GTIN">
+      <Name>Consumer GTIN · shared</Name>
+    </Entity>
+    <Entity ID="ent_GTIN-EXAMPLE-002" UserTypeID="ent_GTIN">
+      <Name>Case GTIN</Name>
+    </Entity>
+    <Entity ID="ent_GTIN-EXAMPLE-003" UserTypeID="ent_GTIN">
+      <Name>Pallet GTIN</Name>
+    </Entity>
+  </Entities>
+</STEP-ProductInformation>

@@ -648,3 +648,165 @@ button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,inpu
   .orbit .graph-controls.dock-bottom-left { left:10px; bottom:10px; }
   .orbit .graph-controls.dock-bottom-right { right:10px; bottom:10px; }
 }
+
+/* Built-in example / private local dataset switch */
+.orbit-dataset-selector { padding: 12px 14px 10px; border-bottom: 1px solid rgba(148,163,184,.13); }
+.orbit-dataset-heading { font-size: 10px; letter-spacing: .13em; font-weight: 700; color: #a9b2c2; margin-bottom: 9px; }
+.orbit-dataset-selector .orbit-mode-switch { width: 100%; }
+.orbit-dataset-note { margin: 9px 1px 0; font-size: 11px; color: #8e9aac; line-height: 1.5; }
+
+
+/* v4.8: Graph navigation lives in the left sidebar; the canvas stays clear. */
+.orbit .sidebar-graph-controls {
+  margin: 10px 12px 12px; padding: 12px; display: flex; flex-direction: column; gap: 12px;
+  background: linear-gradient(145deg,#202733,#181e28); border: 1px solid #394354;
+  border-radius: 11px; color: #e4e8f0;
+}
+.orbit .sidebar-controls-heading { color:#a8b2c3; font-size:10px; font-weight:750; letter-spacing:.11em; }
+.orbit .sidebar-relationship-toggle { display:flex; align-items:center; gap:9px; width:100%; padding:9px 10px; border:1px solid #424d5e; border-radius:8px; background:#242c38; color:#dbe2ee; cursor:pointer; text-align:left; font-size:12px; }
+.orbit .sidebar-relationship-toggle span { flex:1; }
+.orbit .sidebar-relationship-toggle strong { font-size:11px; color:#aeb8c9; }
+.orbit .sidebar-relationship-toggle.active { border-color:#9146ff; background:#30253e; color:#e4d5ff; }
+.orbit .sidebar-relationship-toggle.active strong { color:#c9a6ff; }
+.orbit .sidebar-size-control { display:grid; grid-template-columns:1fr auto; align-items:center; gap:8px; font-size:12px; }
+.orbit .sidebar-size-control label { color:#c4ccda; }
+.orbit .sidebar-size-control input { grid-column:1; grid-row:2; width:100%; min-width:0; margin:0; accent-color:#9146ff; cursor:pointer; }
+.orbit .sidebar-size-control output { grid-column:2; grid-row:2; color:#d8c2ff; font-size:11px; font-variant-numeric:tabular-nums; }
+.orbit .sidebar-navigation-actions { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+.orbit .sidebar-navigation-actions button { min-width:0; height:34px; display:flex; align-items:center; justify-content:center; background:#252d39; border:1px solid #424d5e; border-radius:7px; color:#dce3ef; cursor:pointer; }
+.orbit .sidebar-navigation-actions button:hover { border-color:#9146ff; background:#30253e; }
+
+/* v4.9: graph controls follow the object sections. */
+.orbit .sidebar-graph-controls { margin-top: 16px; margin-bottom: 18px; flex-shrink: 0; }
+.orbit .sidebar-relationship-toggle > svg:last-child { margin-left: auto; color: #b9c6d8; flex-shrink: 0; }
+.orbit .sidebar-relationship-toggle.active > svg:last-child { color: #c9a6ff; }
+
+
+/* v5.0: One consistent Graphite Space sidebar design system. */
+.orbit.theme-graphite .sidebar {
+  --side-panel: #1d2430;
+  --side-control: #252c38;
+  --side-border: #3a4454;
+  --side-muted: #aab6c8;
+  --side-radius: 10px;
+  --side-gap: 12px;
+}
+.orbit.theme-graphite .sidebar-panel {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 var(--side-gap);
+  padding: 12px;
+  border: 1px solid var(--side-border);
+  border-radius: var(--side-radius);
+  background: linear-gradient(150deg, #222a36, #1a202a);
+  box-shadow: inset 0 1px rgba(255,255,255,.035);
+}
+.orbit.theme-graphite .sidebar-panel-heading {
+  margin: 0 0 10px;
+  color: var(--side-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .11em;
+}
+.orbit.theme-graphite .brand { margin: 0 0 16px; }
+.orbit.theme-graphite .orbit-view-selector .orbit-mode-switch,
+.orbit.theme-graphite .orbit-dataset-selector .orbit-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--side-border);
+  border-radius: 8px;
+  background: #141b25;
+}
+.orbit.theme-graphite .orbit-view-selector .orbit-layout-switch {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 4px;
+  border: 1px solid var(--side-border);
+  border-radius: 8px;
+  background: #141b25;
+}
+.orbit.theme-graphite .sidebar .orbit-mode-switch button,
+.orbit.theme-graphite .sidebar .orbit-layout-switch button {
+  min-height: 34px;
+  padding: 7px 5px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.orbit.theme-graphite .sidebar .orbit-mode-switch button.active,
+.orbit.theme-graphite .sidebar .orbit-layout-switch button.active {
+  color: #f7f3ff;
+  background: #30253e;
+  border-color: #9146ff;
+  box-shadow: inset 0 0 0 1px rgba(145,70,255,.12);
+}
+.orbit.theme-graphite .orbit-dataset-note {
+  margin: 10px 1px 0;
+  color: var(--side-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.orbit.theme-graphite .sidebar-objects-heading { margin: 6px 0 8px; }
+.orbit.theme-graphite .search-box {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  margin: 0 0 10px;
+  border: 1px solid var(--side-border);
+  border-radius: 8px;
+  background: var(--side-control);
+}
+.orbit.theme-graphite .explorer-sections { gap: 8px; margin-bottom: var(--side-gap); }
+.orbit.theme-graphite .section-header {
+  min-height: 42px;
+  border: 1px solid var(--side-border);
+  border-radius: 8px;
+  background-color: var(--side-control);
+}
+.orbit.theme-graphite .section-expand { padding: 9px 10px; }
+.orbit.theme-graphite .section-visibility {
+  min-width: 36px;
+  justify-content: center;
+  border-left-color: var(--side-border);
+}
+.orbit.theme-graphite .sidebar-graph-controls {
+  gap: 12px;
+  flex-shrink: 0;
+}
+.orbit.theme-graphite .sidebar-relationship-toggle {
+  min-height: 38px;
+  background: var(--side-control);
+  border-color: var(--side-border);
+  border-radius: 8px;
+}
+.orbit.theme-graphite .sidebar-relationship-toggle.active {
+  background: #30253e;
+  border-color: #9146ff;
+}
+.orbit.theme-graphite .sidebar-size-control { gap: 8px; }
+.orbit.theme-graphite .sidebar-navigation-actions button {
+  height: 36px;
+  background: var(--side-control);
+  border-color: var(--side-border);
+  border-radius: 8px;
+}
+.orbit.theme-graphite .sidebar-navigation-actions button:hover {
+  background: #30253e;
+  border-color: #9146ff;
+}
+.orbit.theme-graphite .stepxml-source {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 var(--side-gap);
+  border-color: var(--side-border);
+  border-radius: var(--side-radius);
+}

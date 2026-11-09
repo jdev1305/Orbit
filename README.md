@@ -1,16 +1,12 @@
-# Orbit v3.2 — Interface cleanup
+# Orbit v4.4 — clearer example relationships
 
-Based on v3.1 privacy-first local-only version.
+Copy `src/App.tsx`, `src/App.css`, and `public/examples/example-product.xml` into your existing Orbit project, replacing those files.
 
-## Changes
-- Removed the graph's top information bar entirely.
-- Inspector now groups each property in a distinct graphite panel with clearly separated label and value. Attributes also separate ID and value.
-- Removed the inspector's ambiguous copy button.
-- Added a **Copy ID** button (copy icon) to every object row in the left explorer, in both modes. Its tooltip identifies the exact ID; the icon becomes a check on success.
-- Preserved existing STEPXML local-only loading, parsing, graph interactions, theme, and focus behavior.
+- Removed the global **Hide all** button. The remaining eye button restores visibility. Individual object and section visibility controls remain available.
+- Example now has **13 fictional objects**: 7 products, 3 GTIN entities, and 3 data containers.
+- The **same consumer GTIN** is referenced by the CU, Golden Supplier Item, Supplier Item, Data Pool Item, and Sales Unit. This makes the shared identity visually explicit.
+- The case and pallet retain their own GTINs to demonstrate packaging-level identifiers.
+- Supplier chain remains CU → Golden Supplier Item → Supplier Item → Data Pool Item, with typed references.
+- Both Data Model and Product Explorer derive their graph from the same example STEPXML, with no parser changes.
 
-## Install
-Replace `src/App.tsx` and `src/App.css` in your existing Orbit project.
-Run `npm.cmd run lint` and `npm.cmd run build` on Windows.
-
-This package has not been validated against your local npm dependencies.
+Run `npm.cmd run lint` and `npm.cmd run build` before committing.
